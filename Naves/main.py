@@ -21,17 +21,18 @@ class Data:
     background: pygame.SurfaceType
     current_username: str = ""
     bullet_sprite: pygame.SurfaceType = None
+    size_fix:pygame.Vector2
 
 data = Data()
 
 class Bullet:
     def __init__(self, position):
         self.position = pygame.math.Vector2(position)
-        self.speed = 15
+        self.speed = 750 * data.size_fix.x
         self.rect = pygame.Rect(position[0], position[1], 8, 4)
         
-    def update(self):
-        self.position.x += self.speed
+    def update(self, dt):
+        self.position.x += self.speed * dt
         self.rect.x = self.position.x
         self.rect.y = self.position.y
         
@@ -52,30 +53,30 @@ class MainMenu(Scene):
         self.create_ui()
         
     def create_ui(self):
-        self.add_ui_element(TextLabel(320, 100, "Naves", 102, (255, 255, 255),font_name=os.path.abspath("./assets/SpaceMono.ttf"), root_point=(0.5, 0)))
+        self.add_ui_element(TextLabel(320*data.size_fix.x, 100*data.size_fix.y, "Naves", 102, (255, 255, 255),font_name=os.path.abspath("./assets/SpaceMono.ttf"), root_point=(0.5, 0)))
         
-        self.play_button = Button(320, 300, 300, 90, "PLAY", 40, None, (0.5, 0.5))
+        self.play_button = Button(320*data.size_fix.x, 300*data.size_fix.y, 300*data.size_fix.x, 90*data.size_fix.y, "PLAY", 40, None, (0.5, 0.5))
         self.play_button.set_on_click(self.play_clicked)
         self.add_ui_element(self.play_button)
         
-        self.exit_button = Button(320, 400, 285, 75, "EXIT", 36, None, (0.5, 0.5))
+        self.exit_button = Button(320*data.size_fix.x, 400*data.size_fix.y, 285*data.size_fix.x, 75*data.size_fix.y, "EXIT", 36, None, (0.5, 0.5))
         self.exit_button.set_on_click(self.exit_clicked)
         self.add_ui_element(self.exit_button)
         
-        self.add_ui_element(TextLabel(320, 500, "Coloque seu nome + turma aqui:", 24, (255, 255, 255),font_name=None, root_point=(0.5, 0)))
-        self.username_textbox = TextBox(320, 532, 300, 35, "", 24, None, (0.5, 0))
+        self.add_ui_element(TextLabel(320*data.size_fix.x, 500*data.size_fix.y, "Coloque seu nome + turma aqui:", 24, (255, 255, 255),font_name=None, root_point=(0.5, 0)))
+        self.username_textbox = TextBox(320*data.size_fix.x, 532*data.size_fix.y, 300*data.size_fix.x, 35*data.size_fix.y, "", 24, None, (0.5, 0))
         self.add_ui_element(self.username_textbox)
-        self.add_ui_element(TextLabel(320, 570, "*Não utilize acentos, este será usado para a entrega da premiação.", 16, (190, 60, 90), None, root_point=(0.5, 0)))
+        self.add_ui_element(TextLabel(320*data.size_fix.x, 570*data.size_fix.y, "*Não utilize acentos, este será usado para a entrega da premiação.", 16, (190, 60, 90), None, root_point=(0.5, 0)))
         
-        self.add_ui_element(TextLabel(640, 15, "LEADERBOARD", 30, (255, 255, 255),font_name=None, root_point=(0, 0)))
-        self.leaderboard_scroll = ScrollingFrame(640, 40, 600, 640, 500, 900, (0, 0))
+        self.add_ui_element(TextLabel(int(640*data.size_fix.x), 15*data.size_fix.y, "LEADERBOARD", 30, (255, 255, 255),font_name=None, root_point=(0, 0)))
+        self.leaderboard_scroll = ScrollingFrame(self.engine.width-int(20*data.size_fix.x), int(40*data.size_fix.y), int(360*data.size_fix.x), int(500*data.size_fix.x), int(360*data.size_fix.x), int(900*data.size_fix.y), (1.0, 0))
         
         self.add_ui_element(self.leaderboard_scroll)
         
     def update_leaderboard(self):
         self.leaderboard_scroll.children.clear()
         for index, user in enumerate(sorted(data.leaderboard['scores'], key=lambda x: x['score'], reverse=True)):
-            self.leaderboard_scroll.add_child(TextLabel(25, (index * 50)+15, f"{index + 1} - {user['name']} - {user['score']}", 48, (255, 255, 255),font_name=None, root_point=(0, 0)))
+            self.leaderboard_scroll.add_child(TextLabel((25*data.size_fix.x), ((index * 50)+15) * data.size_fix.y, f"{index + 1} - {user['name']} - {user['score']}", 48, (255, 255, 255),font_name=None, root_point=(0, 0)))
         
     def play_clicked(self):
         if len(self.username_textbox.text) > 1:
@@ -135,23 +136,15 @@ class Player:
             'explosion': data.spaceship_explosion
         }
         self.position.xy = (120, 336)
-        frame_rect = self.animations[self.state].frames[0].get_bounding_rect()
-        self.rect = pygame.Rect(0, 0, frame_rect.width, frame_rect.height)
+        self.rect = self.animations[self.state].frames[0].get_bounding_rect()
         self.rect.center = self.position.xy
         
-        self.first_rect = self.animations[self.state].frames[0].get_bounding_rect()
-        self.first_rect.center = self.rect.center
     
     def update(self, dt):
         if self.state == 'explosion' and time.time() - self.explosion_start_time > 1.5:
             return
-            
-        self.animations[self.state].update()
-        frame_rect = self.animations[self.state].get_current_frame().get_bounding_rect()
-        self.rect = pygame.Rect(0, 0, frame_rect.width, frame_rect.height)
-        self.rect.center = self.position.xy
         
-        self.first_rect.center = self.rect.center
+        self.rect.center = self.position.xy
         
         if self.invulnerable:
             current_time = time.time()
@@ -170,7 +163,7 @@ class Player:
             
         current_frame = self.animations[self.state].get_current_frame()
         frame_rect = current_frame.get_bounding_rect()
-        render_position = (self.rect.centerx - frame_rect.width/2, self.rect.top - frame_rect.height/2)
+        render_position = (self.rect.centerx - frame_rect.width/2, self.rect.top + 5 - frame_rect.height/2)
         renderer.blit(current_frame, render_position)
     
     def explode(self):
@@ -179,7 +172,7 @@ class Player:
         self.animations['explosion'].reset()
         
     def get_bullet_spawn_position(self) -> tuple:
-        return (self.rect.right, self.first_rect.centery)
+        return (self.rect.right, self.rect.centery)
 
 class Game(Scene):
     def on_exit(self, next_scene = None):
@@ -204,7 +197,7 @@ class Game(Scene):
             if event.key == pygame.K_k:
                 self.player.health -= 1
         
-        self.score_label = TextLabel(1270, 15, f"Pontuação: {int(self.player.score)}", 24, (255, 255, 255),font_name=None, root_point=(1, 0))
+        self.score_label = TextLabel(self.engine.width-10, 15, f"Pontuação: {int(self.player.score)}", 24, (255, 255, 255),font_name=os.path.join("assets", "SpaceMono.ttf"), root_point=(1, 0))
         self.add_ui_element(self.score_label)
         
         self.audio_system.play_music("bgm", 0.7, 1.0, True)
@@ -265,13 +258,13 @@ class Game(Scene):
             
         keys = pygame.key.get_pressed()
         if keys[pygame.K_UP] or keys[pygame.K_w]:
-            self.player.position.y -= 10
+            self.player.position.y -= (400 * data.size_fix.y) * dt
             if self.player.position.y < 72:
                 self.player.position.y = 72
         if keys[pygame.K_DOWN] or keys[pygame.K_s]:
-            self.player.position.y += 10
-            if self.player.position.y > 608:
-                self.player.position.y = 608
+            self.player.position.y += (400 * data.size_fix.y) * dt
+            if self.player.position.y > self.engine.height*0.8:
+                self.player.position.y = self.engine.height*0.8
             
         if (keys[pygame.K_SPACE] or self.engine.input_state.mouse_buttons_pressed.left) and time.time() - self.player.last_shoot > self.player.shoot_cooldown:
             self.player.last_shoot = time.time()
@@ -281,22 +274,22 @@ class Game(Scene):
     def create_asteroid(self):
         sprite:pygame.Surface = random.choice(data.asteroids)
         sprite_size = sprite.get_size()
-        scale_factor = random.uniform(2, 3)
+        scale_factor = random.uniform(2, 3) * (self.engine.width / 1024)
         sprite = pygame.transform.scale(sprite, (int(sprite_size[0] * scale_factor), int(sprite_size[1] * scale_factor)))
         
         bounding_rect = sprite.get_bounding_rect()
         y = random.randint(80, self.engine.height - (80 + bounding_rect.height))
         
-        asteroid_rect = pygame.Rect(1312 + bounding_rect.x, y + bounding_rect.y, bounding_rect.width, bounding_rect.height)
+        asteroid_rect = pygame.Rect(self.engine.width+ 20 + bounding_rect.x, y + bounding_rect.y, bounding_rect.width, bounding_rect.height)
         self.asteroids.append((asteroid_rect, sprite))
         
     def create_all_asteroids(self):
         for i in range(self.max_asteroids):
             self.create_asteroid()
     
-    def update_bullets(self):
+    def update_bullets(self, dt):
         for bullet in self.bullets[:]:
-            bullet.update()
+            bullet.update(dt)
             
             if bullet.position.x > self.engine.width:
                 self.bullets.remove(bullet)
@@ -316,7 +309,7 @@ class Game(Scene):
             return
             
         for asteroid_rect, asteroid_sprite in self.asteroids[:]:
-            asteroid_rect.x -= 6.5 * self.asteroid_speed
+            asteroid_rect.x -= ((293 * self.asteroid_speed) * data.size_fix.x) * dt
             
             if asteroid_rect.colliderect(self.player.rect) and not self.player.invulnerable and self.player.state != 'explosion':
                 self.player.health -= 1
@@ -352,8 +345,8 @@ class Game(Scene):
         start_pos = (self.player.rect.centerx, self.player.rect.centery)
         
         for i in range(10):
-            segment_length = 20
-            gap_length = 10
+            segment_length = 20 * data.size_fix.x
+            gap_length = 10 * data.size_fix.x
             segment_start = start_pos[0] + i * (segment_length + gap_length)
             segment_end = segment_start + segment_length
             
@@ -378,7 +371,7 @@ class Game(Scene):
             
         self.input_handler(dt)
         self.player.update(dt)
-        self.update_bullets()
+        self.update_bullets(dt)
         self.update_asteroids(dt)
         
         if not self.game_over:
@@ -393,7 +386,7 @@ class Game(Scene):
                 spread=30.0
             )
         
-        self.parallax_x -= 4.5 * self.asteroid_speed
+        self.parallax_x -= (202 * self.asteroid_speed) * data.size_fix.x * dt
         if abs(self.parallax_x) > self.parallax_sample.get_width():
             self.parallax_x = 0
         
@@ -426,7 +419,7 @@ class Game(Scene):
             json.dump(data.leaderboard, f)
             
     def render(self, renderer):
-        renderer.draw_rect(0, 0, self.engine.width, self.engine.height, (30, 15, 50))
+        renderer.fill_screen((30,  15, 50))
         self.render_parallax(renderer)
         
         self.render_asteroids(renderer)
@@ -435,7 +428,7 @@ class Game(Scene):
         
         self.player.render(renderer)
         
-        renderer.blit(pygame.transform.scale(data.health_bar[int(self.player.health) if self.player.health > 0 else 0], (192, 48)), (10, 10))
+        renderer.blit(pygame.transform.scale(data.health_bar[int(self.player.health) if self.player.health > 0 else 0], (192*data.size_fix.x, 48*data.size_fix.y)), (10*data.size_fix.x, 10*data.size_fix.y))
         
         if args.debug:
             self.render_debug(renderer)
@@ -447,12 +440,12 @@ class Game(Scene):
             
             font = pygame.font.Font(None, 74)
             text = font.render("GAME OVER", True, (255, 50, 50))
-            text_rect = text.get_rect(center=(self.engine.width/2, self.engine.height/2 - 50))
+            text_rect = text.get_rect(center=(self.engine.width/2, self.engine.height/2 - (50*data.size_fix.y)))
             renderer.blit(text, text_rect)
             
             font = pygame.font.Font(None, 36)
             score_text = font.render(f"Final Score: {int(self.player.score)}", True, (255, 255, 255))
-            score_rect = score_text.get_rect(center=(self.engine.width/2, self.engine.height/2 + 20))
+            score_rect = score_text.get_rect(center=(self.engine.width/2, self.engine.height/2 + (20*data.size_fix.y)))
             renderer.blit(score_text, score_rect)
 
 class GameOver(Scene):
@@ -462,20 +455,20 @@ class GameOver(Scene):
         return super().on_enter(previous_scene)
         
     def create_ui(self):
-        self.add_ui_element(TextLabel(320, 100, "GAME OVER", 74, (255, 50, 50), font_name=None, root_point=(0.5, 0)))
+        self.add_ui_element(TextLabel(320*data.size_fix.x, 100*data.size_fix.y, "GAME OVER", 74, (255, 50, 50), font_name=None, root_point=(0.5, 0)))
         
-        self.menu_button = Button(320, 300, 300, 90, "MAIN MENU", 40, None, (0.5, 0.5))
+        self.menu_button = Button(320*data.size_fix.x, 300*data.size_fix.y, 300*data.size_fix.x, 90*data.size_fix.y, "MAIN MENU", 40, None, (0.5, 0.5))
         self.menu_button.set_on_click(self.menu_clicked)
         self.add_ui_element(self.menu_button)
         
-        self.leaderboard_scroll = ScrollingFrame(640, 40, 600, 640, 500, 900, (0, 0))
+        self.leaderboard_scroll = ScrollingFrame(self.engine.width-int(40*data.size_fix.x), int(40*data.size_fix.y), int(360*data.size_fix.x), int(640*data.size_fix.y), int(360*data.size_fix.x), int(900*data.size_fix.y), (1, 0))
         self.update_leaderboard()
         self.add_ui_element(self.leaderboard_scroll)
         
     def update_leaderboard(self):
         self.leaderboard_scroll.children.clear()
         for index, user in enumerate(sorted(data.leaderboard['scores'], key=lambda x: x['score'], reverse=True)):
-            self.leaderboard_scroll.add_child(TextLabel(25, (index * 50)+15, f"{index + 1} - {user['name']} - {user['score']}", 48, (255, 255, 255), font_name=None, root_point=(0, 0)))
+            self.leaderboard_scroll.add_child(TextLabel(25*data.size_fix.x, ((index * 50)+15)*data.size_fix.y, f"{index + 1} - {user['name']} - {user['score']}", 48, (255, 255, 255), font_name=None, root_point=(0, 0)))
         
     def menu_clicked(self):
         self.engine.set_scene("MainMenu")
@@ -488,13 +481,18 @@ class GameOver(Scene):
 
 def main():
     data.started = time.time()
-    engine = LunaEngine("Naves", width = 1280, height = 720)
+    engine = LunaEngine("Naves", width = 1920, height = 1080)
     engine.initialize()
+    
+    data.size_fix = pygame.Vector2(engine.width/1024, engine.height/768)
 
-    data.asteroids = SpriteSheet("./assets/Asteroids.png").get_sprites_at_regions([pygame.Rect(0, 0, 32, 32), pygame.Rect(32, 0, 32, 32), pygame.Rect(64, 0, 32, 32), pygame.Rect(96, 0, 32, 32), pygame.Rect(128, 0, 32 ,32), pygame.Rect(0, 32, 32, 32), pygame.Rect(32, 32, 32, 32), pygame.Rect(64, 32, 32, 32), pygame.Rect(96, 32, 32, 32), pygame.Rect(128, 32, 32, 32)])
+    data.asteroids = SpriteSheet("./assets/Asteroids.png").get_sprites_at_regions([
+        (0, 0, 32, 32), (32, 0, 32, 32), (64, 0, 32, 32), (96, 0, 32, 32), (128, 0, 32 ,32),
+        (0, 32, 32, 32), (32, 32, 32, 32), (64, 32, 32, 32), (96, 32, 32, 32), (128, 32, 32, 32),
+        (0, 64, 32, 32), (32, 64, 32, 32), (64, 64, 32, 32), (96, 64, 32, 32), (128, 64, 32, 32),])
     data.health_bar = SpriteSheet("./assets/Health-bar.png").get_sprites_at_regions([pygame.Rect(640, 0, 128, 32), pygame.Rect(512, 0, 128, 32), pygame.Rect(384, 0, 128, 32), pygame.Rect(256, 0, 128, 32), pygame.Rect(128, 0, 128, 32), pygame.Rect(0, 0, 128, 32)])
-    data.spaceship = Animation(spritesheet_file='./assets/Spaceship.png', size=(32, 32), start_pos=(0, 0), frame_count=5, scale=(2.5, 2.5), duration=0.75, loop=True)
-    data.spaceship_explosion = Animation(spritesheet_file='./assets/Spaceship-explosion.png', size=(32, 32), start_pos=(0, 0), frame_count=12, scale=(2.5, 2.5), duration=0.7, loop=False)
+    data.spaceship = Animation(spritesheet_file='./assets/Spaceship.png', size=(32, 32), start_pos=(0, 0), frame_count=5, scale=(2.5 * data.size_fix.x, 2.5 * data.size_fix.x), duration=0.75, loop=True)
+    data.spaceship_explosion = Animation(spritesheet_file='./assets/Spaceship-explosion.png', size=(32, 32), start_pos=(0, 0), frame_count=12, scale=(2.5 * data.size_fix.x, 2.5 * data.size_fix.x), duration=0.7, loop=False)
     data.background = pygame.transform.scale(pygame.image.load(os.path.abspath("./assets/background.jpg")).convert_alpha(), (engine.width, engine.height))
     
     bullet_surface = pygame.Surface((8, 4), pygame.SRCALPHA)
