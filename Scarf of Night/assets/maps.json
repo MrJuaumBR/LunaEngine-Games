@@ -17,16 +17,16 @@
         "W                                                              W",
         "W                                                              W",
         "W                                                              W",
-        "W             G              G                                 W",
-        "W        WWWWWWWWWW    W   WWWWWW  WWW W WWWWWWWWWWWWW         W",
-        "W    P                W                                        W",
-        "W                    W       G           W          F          W",
+        "W                                                              W",
+        "W        WWWWWWWWWW    WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW          W",
+        "W                                                              W",
+        "W    P                       G                     F           W",
         "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"
       ]
     },
     {
       "level": 2,
-      "name": "Floresta dos Arqueiros",
+      "name": "Floresta Profunda",
       "tiles": [
         "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
         "W                                                              W",
@@ -38,10 +38,10 @@
         "W                                                              W",
         "W                                                              W",
         "W                                              F               W",
-        "W           WWWWW           WWWWW          WWWWWWW  W          W",
+        "W           WWWWW           WWWWW          WWWWWWW             W",
         "W                                                  W           W",
-        "W                     A                     G     W            W",
-        "W      WWWWW  WWWW   WWWWW   WWWWW WWWWW   WWWW  WWWWW         W",
+        "W                     A        W     G            W            W",
+        "W      WWWWW  WWWW   WWWWW  WWWWWW WWWWW   WWWW  WWWWW         W",
         "W     W            WW                                          W",
         "W   P        G           A                 G                   W",
         "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"
@@ -59,14 +59,14 @@
         "W                                                              W",
         "W                                                              W",
         "W                                                              W",
-        "W                 WWWWWWWWWWWWWWWWWWWWWWWWWWW                  W",
-        "W                                                              W",
-        "W        WWWWW                           WWWWW                 W",
-        "W                                                              W",
-        "W   WWWWW         WWWWW        WWWWW                WWWWW      W",
-        "W                                                              W",
+        "W                 WWWWWWWWWWWWWWWWWWWWWWW                      W",
+        "W                         WA            W                      W",
+        "W        WWWWW            WW WWWWWWW    W                      W",
+        "W                    G             W   FW                      W",
+        "W   WWWWW         WWWWWWWWWWWWWWWWWWWWWWW                      W",
+        "W                W                                             W",
         "W          WWWWW         WWWWW         WWWWW                   W",
-        "W  P    G          A           G              A          F     W",
+        "W  P    G          A           G              A                W",
         "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"
       ]
     },
@@ -95,7 +95,7 @@
     },
     {
       "level": 5,
-      "name": "Fortaleza Final",
+      "name": "Mansão Final",
       "tiles": [
         "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
         "W                                                              W",
@@ -112,90 +112,9 @@
         "W                                                              W",
         "W        WWWWW           WWWWW           WWWWW           WWWWW W",
         "W                                                              W",
-        "W  P  G  A  G  A  G  A  G  A  G  A  G  A  G  A  G  A  G  F    W",
-        "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"
-      ]
-    },
-    {
-      "level": 6,
-      "name": "Templo das Sombras",
-      "tiles": [
-        "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-        "W                                                              W",
-        "W      WW                 WW                 WW                W",
-        "W                                                              W",
-        "W           WW                 WW                 WW           W",
-        "W                                                              W",
-        "W                WW                 WW                 WW      W",
-        "W                                                              W",
-        "W      WW                 WW                 WW                W",
-        "W                                                              W",
-        "W           WW                 WW                 WW           W",
-        "W                                                              W",
-        "W                WW                 WW                 WW      W",
-        "W                                                              W",
-        "W      WW                 WW                 WW                W",
-        "W  P G   A G   A G   A G   A G   A G   A G   A G   A G   F    W",
-        "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"
-      ]
-    },
-    {
-      "level": 7,
-      "name": "Labirinto Vertical",
-      "tiles": [
-        "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-        "W    P       W           W           W           W            W",
-        "W            W           W           W           W            W",
-        "W  WWWWWWWW  W  WWWWWWW  W  WWWWWWW  W  WWWWWWW  W  WWWWWWWW  W",
-        "W            W           W           W           W            W",
-        "W            W           W           W           W            W",
-        "W  WWWWWWWW  W  WWWWWWW  W  WWWWWWW  W  WWWWWWW  W  WWWWWWWW  W",
-        "W            W           W           W           W            W",
-        "W            W           W           W           W            W",
-        "W  WWWWWWWW  W  WWWWWWW  W  WWWWWWW  W  WWWWWWW  W  WWWWWWWW  W",
-        "W            W           W           W           W            W",
-        "W            W           W           W           W            W",
-        "W  WWWWWWWW  W  WWWWWWW  W  WWWWWWW  W  WWWWWWW  W  WWWWWWWW  W",
-        "W            W           W           W           W            W",
-        "W      G     W     A     W     G     W     A     W      F     W",
-        "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"
-      ]
-    },
-    {
-      "level": 8,
-      "name": "Torre do Ninja",
-      "tiles": [
-        "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-        "W                                                          W  W",
-        "W                                                          W  W",
-        "W  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW  W  W",
-        "W                                                          W  W",
-        "W                                                          W  W",
-        "W  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW  W  W",
-        "W                                                          W  W",
-        "W                                                          W  W",
-        "W  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW  W  W",
-        "W                                                          W  W",
-        "W                                                          W  W",
-        "W  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW  W  W",
-        "W                                                          W  W",
-        "W  P   G   A   G   A   G   A   G   A   G   A   G   A   G   W  W",
-        "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW  W",
-        "W                                                              W",
-        "W                                                          W  W",
-        "W                                                          W  W",
-        "W                                                              W",
-        "W                                                              W",
-        "W                                                              W",
-        "W                                                              W",
-        "W                                                              W",
-        "W                                                              W",
-        "W                                                              W",
-        "W                                                              W",
-        "W                                                              W",
-        "W                                                              W",
+        "W  P  G  A  G  A  G  A  G  A  G  A  G  A  G  A  G  A  G  F     W",
         "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"
       ]
     }
-    ]
-  }
+  ]
+}
