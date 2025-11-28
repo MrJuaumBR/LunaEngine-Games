@@ -104,14 +104,35 @@ class Data:
                 }
             }
             
+            # Carregar backgrounds JPG com parallax infinito
             self.assets['backgrounds'] = {}
-            for i in range(1, 6):
-                bg_path = os.path.join(path_assets, f'level{i}.png')
+            background_files = {
+                1: 'background_1.jpg',  # Floresta
+                2: 'background_1.jpg',  # Floresta  
+                3: 'background_2.jpg',  # Cidade
+                4: 'background_2.jpg',  # Cidade
+                5: 'background_3.jpg'   # Casa
+            }
+            
+            for level_num, bg_file in background_files.items():
+                bg_path = os.path.join(path_assets, bg_file)
                 if os.path.exists(bg_path):
-                    bg_image = pygame.image.load(bg_path)
-                    self.assets['backgrounds'][f'level{i}'] = pygame.transform.scale(
-                        bg_image, (1280 * self.ratio.x, 720 * self.ratio.y)
-                    )
+                    try:
+                        # Carrega a imagem
+                        bg_image = pygame.image.load(bg_path)
+                        self.assets['backgrounds'][f'level{level_num}'] = scaled_bg
+                    except Exception as e:
+                        print(f"Erro ao carregar background {bg_file}: {e}")
+                        # Fallback: criar background colorido
+                        if level_num in [1, 2]:
+                            self.assets['backgrounds'][f'level{level_num}'] = None
+                        elif level_num in [3, 4]:
+                            self.assets['backgrounds'][f'level{level_num}'] = None
+                        else:
+                            self.assets['backgrounds'][f'level{level_num}'] = None
+                else:
+                    print(f"Arquivo de background não encontrado: {bg_file}")
+                    self.assets['backgrounds'][f'level{level_num}'] = None
             
             enemy_ss = os.path.join(path_assets, 'enemies.png')
             self.assets['enemies'] = {
@@ -160,6 +181,46 @@ class Data:
             print(f"Erro ao carregar animações do player: {e}")
 
 data = Data()
+
+class ParallaxBackground:
+    """Sistema de background com parallax infinito"""
+    def __init__(self, background_surface, camera, speed_factor=0.5):
+        self.background = background_surface
+        self.camera = camera
+        self.speed_factor = speed_factor  # 0.0 = estático, 1.0 = move com câmera
+        self.bg_width = background_surface.get_width()
+        self.bg_height = background_surface.get_height()
+        
+    def render(self, renderer):
+        if not self.background:
+            return
+            
+        # Calcula a posição base do background baseado na posição da câmera
+        camera_x = self.camera.position.x
+        camera_y = self.camera.position.y
+        
+        # Aplica o fator de velocidade do parallax
+        parallax_x = camera_x * self.speed_factor
+        parallax_y = camera_y * self.speed_factor
+        
+        # Calcula quantas cópias do background são necessárias
+        start_x = int(parallax_x // self.bg_width) - 1
+        end_x = int((parallax_x + self.camera.viewport_width) // self.bg_width) + 2
+        
+        start_y = int(parallax_y // self.bg_height) - 1
+        end_y = int((parallax_y + self.camera.viewport_height) // self.bg_height) + 2
+        
+        # Renderiza todas as cópias necessárias
+        for x in range(start_x, end_x):
+            for y in range(start_y, end_y):
+                bg_x = x * self.bg_width - parallax_x
+                bg_y = y * self.bg_height - parallax_y
+                
+                # Verifica se está dentro da tela
+                if (bg_x + self.bg_width > 0 and bg_x < self.camera.viewport_width and
+                    bg_y + self.bg_height > 0 and bg_y < self.camera.viewport_height):
+                    
+                    renderer.blit(self.background, (bg_x, bg_y))
 
 class Projectile:
     def __init__(self, x, y, direction):
@@ -371,24 +432,44 @@ class Player:
         self.facing_right = True
         self.attack_index = 0
         
-        self.position = pygame.Vector2(100, 400)
+        # Sistema de física integrado - CORREÇÃO: Posição inicial zerada
+        self.position = pygame.Vector2(0, 0)  # Será definida no carregamento do nível
         self.velocity = pygame.Vector2(0, 0)
-        self.speed = 300
-        self.jump_force = -650
-        self.gravity = 1200
+        self.acceleration = pygame.Vector2(0, 0)
+        
+        # Constantes de física otimizadas
+        self.GRAVITY = 1800
+        self.HORIZONTAL_ACCELERATION = 1200
+        self.MAX_VELOCITY_X = 400
+        self.MAX_VELOCITY_Y = 800
+        self.JUMP_VELOCITY = -775
+        self.DASH_VELOCITY = 500
+        self.WALL_JUMP_VELOCITY = -550
+        self.WALL_JUMP_HORIZONTAL_VELOCITY = 350
+        
+        # Atrito
+        self.GROUND_FRICTION = 0.85
+        self.AIR_FRICTION = 0.98
+        
+        # Estados - CORREÇÃO: Inicializar todos como False
         self.on_ground = False
+        self.wall_left = False
+        self.wall_right = False
+        self.direction = 1  # Começa virado para direita
+        self.moving = False  # Nova variável para controle de movimento
         
-        # Sistema de hitbox simplificado e funcional
-        idle_frame = self.animations['idle'].get_current_frame()
-        frame_width, frame_height = idle_frame.get_size()
+        # Recursos
+        self.stamina = 100
+        self.state = "normal"
+        self.dash_cooldown = 0
+        self.wall_jump_cooldown = 0
         
-        # Rect principal baseado na sprite
-        self.rect = pygame.Rect(self.position.x, self.position.y, frame_width, frame_height)
-        
-        # Hitbox para colisões (menor que a sprite)
-        self.hitbox = pygame.Rect(0, 0, frame_width * 0.6, frame_height * 0.8)
+        # Sistema de hitbox - CORREÇÃO: Tamanho base padrão
+        self.rect = pygame.Rect(0, 0, 64, 64)  # Tamanho padrão
+        self.hitbox = pygame.Rect(0, 0, 38, 51)  # 60% de 64, 80% de 64
         self.hitbox.center = self.rect.center
         
+        # Sistema de combate
         self.attack_cooldown = 0
         self.attack_duration = 0
         self.is_attacking = False
@@ -396,40 +477,93 @@ class Player:
         self.health = 3
         self.iframes = 0
         
-    def update(self, dt, platforms, engine: LunaEngine):
-        if self.iframes > 0:
-            self.iframes -= dt
+    def update_physics(self, dt):
+        """Atualiza a física do player - CORREÇÃO: Movimento condicional"""
+        # Aplica gravidade
+        self.acceleration.y += self.GRAVITY
         
-        current_anim = self.animations[f'attack_{self.attack_index}' if self.current_state == 'attack' else self.current_state]
-        current_anim.update()
+        # CORREÇÃO: Só aplica aceleração horizontal se estiver se movendo
+        if self.moving:
+            self.acceleration.x += self.HORIZONTAL_ACCELERATION * self.direction
+        else:
+            self.acceleration.x = 0  # Para movimento imediato
         
-        keys = pygame.key.get_pressed()
+        # Atualiza velocidade
+        self.velocity += self.acceleration * dt
+        self.acceleration = pygame.Vector2(0, 0)
         
-        # Movimento horizontal
-        if not self.is_attacking:
-            if keys[pygame.K_a]:
-                self.velocity.x = -self.speed
-                self.facing_right = False
-                if self.on_ground:
-                    self.current_state = 'run'
-            elif keys[pygame.K_d]:
-                self.velocity.x = self.speed
-                self.facing_right = True
-                if self.on_ground:
-                    self.current_state = 'run'
-            else:
-                self.velocity.x = 0
-                if self.on_ground and self.current_state != 'jump':
-                    self.current_state = 'idle'
+        # Aplica atrito
+        if self.on_ground:
+            self.velocity.x *= self.GROUND_FRICTION
+        else:
+            self.velocity.x *= self.AIR_FRICTION
+        
+        # Limita velocidade
+        self.velocity.x = max(-self.MAX_VELOCITY_X, min(self.velocity.x, self.MAX_VELOCITY_X))
+        self.velocity.y = max(-self.MAX_VELOCITY_Y, min(self.velocity.y, self.MAX_VELOCITY_Y))
+        
+        # Atualiza cooldowns
+        if self.dash_cooldown > 0:
+            self.dash_cooldown -= dt
+        if self.wall_jump_cooldown > 0:
+            self.wall_jump_cooldown -= dt
+    
+    def handle_movement(self, keys, dt):
+        """Lida com todos os movimentos do player - CORREÇÃO: Controle de movimento"""
+        # Movimento horizontal simples - CORREÇÃO: Variável moving controla se está se movendo
+        moving_left = keys[pygame.K_a] or keys[pygame.K_LEFT]
+        moving_right = keys[pygame.K_d] or keys[pygame.K_RIGHT]
+        
+        # CORREÇÃO: Define se está se movendo e a direção
+        self.moving = moving_left or moving_right
+        
+        if moving_left and not moving_right:
+            self.direction = -1
+            self.facing_right = False
+        elif moving_right and not moving_left:
+            self.direction = 1
+            self.facing_right = True
+        # Se ambas as teclas estão pressionadas ou nenhuma, mantém a direção atual mas para movimento
+        else:
+            self.moving = False
         
         # Pulo
-        if keys[pygame.K_SPACE] and self.on_ground and not self.is_attacking:
-            self.velocity.y = self.jump_force
-            self.current_state = 'jump'
+        jump_pressed = keys[pygame.K_SPACE] or keys[pygame.K_w] or keys[pygame.K_UP]
+        if jump_pressed and self.on_ground:
+            self.velocity.y = self.JUMP_VELOCITY
             self.on_ground = False
-            
-        # Ataque
-        if (keys[pygame.K_f] or engine.input_state.mouse_buttons_pressed.left) and not self.is_attacking and self.on_ground:
+            self.current_state = 'jump'
+        
+        # Wall jump (pulo na parede)
+        elif jump_pressed and self.wall_jump_cooldown <= 0 and (self.wall_left or self.wall_right):
+            if self.wall_left:
+                self.velocity.y = self.WALL_JUMP_VELOCITY
+                self.velocity.x = self.WALL_JUMP_HORIZONTAL_VELOCITY
+                self.direction = 1
+                self.facing_right = True
+                self.wall_jump_cooldown = 0.3
+                self.current_state = 'jump'
+            elif self.wall_right:
+                self.velocity.y = self.WALL_JUMP_VELOCITY
+                self.velocity.x = -self.WALL_JUMP_HORIZONTAL_VELOCITY
+                self.direction = -1
+                self.facing_right = False
+                self.wall_jump_cooldown = 0.3
+                self.current_state = 'jump'
+        
+        # Dash (teletransporte rápido)
+        dash_pressed = keys[pygame.K_LSHIFT] or keys[pygame.K_LCTRL]
+        if dash_pressed and self.dash_cooldown <= 0 and self.stamina >= 20:
+            self.velocity.x = self.DASH_VELOCITY * self.direction
+            self.dash_cooldown = 1.0
+            self.stamina -= 20
+            self.current_state = 'run'
+    
+    def update_attack(self, keys, engine, dt, current_anim):
+        """Atualiza sistema de ataque"""
+        attack_pressed = keys[pygame.K_f] or keys[pygame.K_j] or engine.input_state.mouse_buttons_pressed.left
+        
+        if attack_pressed and not self.is_attacking and self.on_ground:
             self.current_state = 'attack'
             self.is_attacking = True
             self.attack_index = (self.attack_index + 1) % 2
@@ -459,28 +593,36 @@ class Player:
             self.current_state = 'idle'
             self.attack_hitbox = None
             self.animations[f'attack_{self.attack_index}'].current_frame_index = 0
-        
-        # Aplicar gravidade
-        self.velocity.y += self.gravity * dt
-        
-        # Atualizar tamanho do rect baseado na frame atual
-        current_frame = current_anim.get_current_frame()
-        frame_width, frame_height = current_frame.get_size()
     
-        old_center = self.rect.center
-        self.rect.width = frame_width
-        self.rect.height = frame_height
-        self.rect.center = old_center
+    def update_collision(self, platforms, dt):
+        """Sistema de colisão otimizado"""
+        # Reset estados
+        self.on_ground = False
+        self.wall_left = False
+        self.wall_right = False
         
-        # Atualizar hitbox para seguir o player
-        self.hitbox.center = self.rect.center
+        # Movimento X primeiro
+        new_x = self.position.x + self.velocity.x * dt
+        test_rect_x = self.hitbox.copy()
+        test_rect_x.x = new_x
         
-        # MOVIMENTO Y primeiro
+        # Colisão X
+        for platform in platforms:
+            if test_rect_x.colliderect(platform):
+                if self.velocity.x > 0:  # Direita
+                    new_x = platform.left - self.hitbox.width
+                    self.wall_right = True
+                elif self.velocity.x < 0:  # Esquerda
+                    new_x = platform.right
+                    self.wall_left = True
+                self.velocity.x = 0
+        
+        self.position.x = new_x
+        
+        # Movimento Y depois
         new_y = self.position.y + self.velocity.y * dt
         test_rect_y = self.hitbox.copy()
         test_rect_y.y = new_y
-        
-        self.on_ground = False
         
         # Colisão Y
         for platform in platforms:
@@ -489,43 +631,58 @@ class Player:
                     new_y = platform.top - self.hitbox.height
                     self.velocity.y = 0
                     self.on_ground = True
-                    if self.current_state == 'jump' and not self.is_attacking:
-                        self.current_state = 'idle'
-                elif self.velocity.y < 0:  # Pulando
+                elif self.velocity.y < 0:  # Subindo
                     new_y = platform.bottom
                     self.velocity.y = 0
         
         self.position.y = new_y
+        
+        # Atualiza hitbox e rect
+        self.hitbox.x = self.position.x
         self.hitbox.y = self.position.y
-        self.rect.centery = self.hitbox.centery
+        self.rect.center = self.hitbox.center
+    
+    def update_animation_state(self):
+        """Atualiza estado da animação baseado no estado físico"""
+        if self.is_attacking:
+            return  # Mantém estado de ataque
         
-        # MOVIMENTO X
-        new_x = self.position.x + self.velocity.x * dt
-        test_rect_x = self.hitbox.copy()
-        test_rect_x.x = new_x
-        
-        # Colisão X
-        collision_occurred = False
-        for platform in platforms:
-            if test_rect_x.colliderect(platform):
-                if self.velocity.x > 0:  # Movendo para direita
-                    new_x = platform.left - self.hitbox.width
-                    collision_occurred = True
-                    self.velocity.x = 0
-                elif self.velocity.x < 0:  # Movendo para esquerda
-                    new_x = platform.right
-                    collision_occurred = True
-                    self.velocity.x = 0
-        
-        if not collision_occurred:
-            self.position.x = new_x
-            self.hitbox.x = self.position.x
+        if not self.on_ground:
+            if self.wall_left or self.wall_right:
+                self.current_state = 'jump'  # Poderia ser uma animação de wall slide
+            else:
+                self.current_state = 'jump'
+        elif abs(self.velocity.x) > 50:
+            self.current_state = 'run'
         else:
-            self.hitbox.x = self.position.x
-            
-        # Atualizar rect principal
-        self.rect.centerx = self.hitbox.centerx
-        self.rect.centery = self.hitbox.centery
+            self.current_state = 'idle'
+    
+    def update_resources(self, dt):
+        """Atualiza recursos do player"""
+        # Regenera stamina
+        if self.on_ground or self.wall_left or self.wall_right:
+            self.stamina = min(100, self.stamina + 25 * dt)
+        else:
+            self.stamina = min(100, self.stamina + 10 * dt)
+    
+    def update(self, dt, platforms, engine: LunaEngine):
+        """Update principal do player"""
+        if self.iframes > 0:
+            self.iframes -= dt
+        
+        # Atualiza animação atual
+        current_anim = self.animations[f'attack_{self.attack_index}' if self.current_state == 'attack' else self.current_state]
+        current_anim.update()
+        
+        keys = pygame.key.get_pressed()
+        
+        # Processa todos os sistemas
+        self.update_physics(dt)
+        self.handle_movement(keys, dt)
+        self.update_attack(keys, engine, dt, current_anim)
+        self.update_collision(platforms, dt)
+        self.update_animation_state()
+        self.update_resources(dt)
         
         # Morte por queda
         if self.position.y > 2500:
@@ -539,7 +696,6 @@ class Player:
         return False
     
     def render(self, renderer: Renderer, camera: Camera):
-        # Piscar se estiver com iframes
         if self.iframes > 0 and int(self.iframes * 10) % 2 == 0:
             return
             
@@ -549,27 +705,30 @@ class Player:
         
         screen_pos = camera.world_to_screen((self.hitbox.centerx, self.hitbox.centery))
         
-        # Renderização corrigida
         new_rect = pygame.Rect(0,0, self.rect.width, self.rect.height)
         new_rect.center = screen_pos.x, screen_pos.y + (self.hitbox.height - self.rect.height)/2
         renderer.blit(frame, new_rect)
         
         if DEBUG_MODE:
-            # Mostrar rect principal
+            # Debug visuals
             screen_rect = self.rect.copy()
             screen_rect.x, screen_rect.y = camera.world_to_screen(pygame.Vector2(screen_rect.x, screen_rect.y))
             renderer.draw_rect(screen_rect.x, screen_rect.y, screen_rect.width, screen_rect.height, (255, 0, 0, 0.3))
             
-            # Mostrar hitbox
             screen_hitbox = self.hitbox.copy()
             screen_hitbox.x, screen_hitbox.y = camera.world_to_screen(pygame.Vector2(screen_hitbox.x, screen_hitbox.y))
             renderer.draw_rect(screen_hitbox.x, screen_hitbox.y, screen_hitbox.width, screen_hitbox.height, (0, 255, 0, 0.5))
             
-            # Mostrar hitbox de ataque
             if self.is_attacking and self.attack_hitbox:
                 screen_attack = self.attack_hitbox.copy()
                 screen_attack.x, screen_attack.y = camera.world_to_screen(pygame.Vector2(screen_attack.x, screen_attack.y))
                 renderer.draw_rect(screen_attack.x, screen_attack.y, screen_attack.width, screen_attack.height, (255, 255, 0, 0.5))
+            
+            # Mostrar recursos
+            font = pygame.font.Font(None, 24)
+            stamina_text = f"Stamina: {int(self.stamina)}"
+            stamina_surface = font.render(stamina_text, True, (0, 255, 0))
+            renderer.blit(stamina_surface, (10, 100))
 
 class Enemy:
     def __init__(self, x, y, enemy_type):
@@ -580,7 +739,6 @@ class Enemy:
         self.last_side = 'right'
         self.animations = data.assets['enemies'][enemy_type]
         
-        # Sistema de hitbox simplificado
         frame = self.animations['idle'].get_current_frame()
         frame_width, frame_height = frame.get_size()
         
@@ -728,7 +886,6 @@ class Enemy:
         return False
     
     def render(self, renderer: Renderer, camera: Camera):
-        # Piscar se estiver com iframes
         if self.iframes > 0 and int(self.iframes * 10) % 2 == 0:
             return
             
@@ -751,10 +908,29 @@ class GameScene(Scene):
     def __init__(self, engine):
         super().__init__(engine)
         self.audio_system: AudioSystem = AudioSystem(16)
+        self.background_music = None
+        self.parallax_bg = None
+        
         try:
+            # Carregar efeitos sonoros
             self.audio_system.load_sound_effect('jump', os.path.join('assets', 'jump.wav'))
             self.audio_system.load_sound_effect('attack', os.path.join('assets', 'attack.wav'))
             self.audio_system.load_sound_effect('death', os.path.join('assets', 'death.wav'))
+            self.audio_system.load_sound_effect('dash', os.path.join('assets', 'dash.wav'))
+            
+            # Carregar música de fundo
+            music_path = os.path.join('assets', 'music.mp3')
+            if os.path.exists(music_path):
+                try:
+                    pygame.mixer.music.load(music_path)
+                    pygame.mixer.music.set_volume(0.5)
+                    pygame.mixer.music.play(-1)  # -1 para loop infinito
+                    print("Música de fundo carregada e tocando")
+                except Exception as e:
+                    print(f"Erro ao carregar música: {e}")
+            else:
+                print("Arquivo de música não encontrado")
+                
         except Exception as e:
             print(f"Erro ao carregar sons: {e}")
     
@@ -767,9 +943,23 @@ class GameScene(Scene):
         self.load_level(data.current_level)
         data.register_custom_particles(self)
         
+        # Configurar background parallax
+        self.setup_parallax_background()
+        
         if 'flag' in data.assets and data.assets['flag']:
             data.assets['flag'].current_frame_index = 0
         return super().on_enter(previous_scene)
+    
+    def setup_parallax_background(self):
+        """Configura o sistema de parallax para o nível atual"""
+        bg_key = f'level{data.current_level}'
+        if bg_key in data.assets['backgrounds'] and data.assets['backgrounds'][bg_key] is not None:
+            background_surface = data.assets['backgrounds'][bg_key]
+            self.parallax_bg = ParallaxBackground(background_surface, self.camera, speed_factor=0.3)
+            print(f"Background parallax configurado para {bg_key}")
+        else:
+            self.parallax_bg = None
+            print(f"Usando fallback background para {bg_key}")
     
     def setup_camera(self):
         self.camera.set_target(self.player, CameraMode.PLATFORMER)
@@ -792,7 +982,49 @@ class GameScene(Scene):
                                      path_font_ninja, root_point=(1, 0))
         self.add_ui_element(self.level_display)
     
+    def determine_tile_type(self, tile_map, x, y, tile_type):
+        """Sistema melhorado para determinar o tipo de tile"""
+        height = len(tile_map)
+        width = len(tile_map[0])
+        
+        if tile_map[y][x] != 'W':
+            return None
+        
+        # Verifica tiles vizinhos
+        left = x > 0 and tile_map[y][x-1] == 'W'
+        right = x < width - 1 and tile_map[y][x+1] == 'W'
+        top = y > 0 and tile_map[y-1][x] == 'W'
+        bottom = y < height - 1 and tile_map[y+1][x] == 'W'
+        
+        # Tile solitário
+        if not any([left, right, top, bottom]):
+            return 'type0'
+        
+        # Tile com todos os vizinhos
+        if all([left, right, top, bottom]):
+            return 'type0'
+        
+        # Transições horizontais
+        if left and right and not top and not bottom:
+            return 'type0'
+        
+        # Transições verticais
+        if top and bottom and not left and not right:
+            return 'type0'
+        
+        # Cantos e bordas - sistema simplificado
+        # Para tiles com padrão mais simples
+        zone_x = x // 2  # Zonas menores para mais variedade
+        zone_y = y // 2
+        
+        # Padrão de xadrez simples
+        if (zone_x + zone_y) % 2 == 0:
+            return 'type0'
+        else:
+            return 'type1'
+    
     def generate_level_tiles(self, level_num):
+        """Gera os tiles do nível com sistema melhorado"""
         level_data = None
         for level in data.maps.get('levels', []):
             if level['level'] == level_num:
@@ -806,7 +1038,13 @@ class GameScene(Scene):
         map_height = len(level_data['tiles'])
         map_width = len(level_data['tiles'][0])
         
-        tile_type = 'forest' if level_num in [1, 2] else 'city' if level_num in [3, 4] else 'house'
+        # Determina o tema baseado no nível
+        if level_num in [1, 2]:
+            tile_type = 'forest'
+        elif level_num in [3, 4]:
+            tile_type = 'city'
+        else:
+            tile_type = 'house'
         
         tile_matrix = []
         for y in range(map_height):
@@ -816,62 +1054,24 @@ class GameScene(Scene):
                 
                 if char == 'W':
                     tile_key = self.determine_tile_type(level_data['tiles'], x, y, tile_type)
-                    tile_sprite = data.assets['tiles'][tile_type][tile_key]
-                    scaled_tile = pygame.transform.scale(tile_sprite, (tile_size, tile_size))
-                    
-                    tile_pos = (x * tile_size, y * tile_size)
-                    tile_row.append((scaled_tile, tile_pos, tile_key, True))
+                    if tile_key and tile_key in data.assets['tiles'][tile_type]:
+                        tile_sprite = data.assets['tiles'][tile_type][tile_key]
+                        scaled_tile = pygame.transform.scale(tile_sprite, (tile_size, tile_size))
+                        
+                        tile_pos = (x * tile_size, y * tile_size)
+                        tile_row.append((scaled_tile, tile_pos, tile_key, True))
+                    else:
+                        # Fallback para type0 se a chave não for encontrada
+                        tile_sprite = data.assets['tiles'][tile_type]['type0']
+                        scaled_tile = pygame.transform.scale(tile_sprite, (tile_size, tile_size))
+                        tile_pos = (x * tile_size, y * tile_size)
+                        tile_row.append((scaled_tile, tile_pos, 'type0', True))
                 else:
                     tile_row.append((None, (x * tile_size, y * tile_size), None, False))
             
             tile_matrix.append(tile_row)
         
         return tile_matrix
-
-    def determine_tile_type(self, tile_map, x, y, tile_type):
-        height = len(tile_map)
-        width = len(tile_map[0])
-        
-        if tile_map[y][x] != 'W':
-            return None
-        
-        zone_size = 4
-        zone_x = x // zone_size
-        zone_y = y // zone_size
-        
-        base_type = 'type0' if (zone_x + zone_y) % 2 == 0 else 'type1'
-        
-        left = x > 0 and tile_map[y][x-1] == 'W'
-        right = x < width - 1 and tile_map[y][x+1] == 'W'
-        top = y > 0 and tile_map[y-1][x] == 'W'
-        bottom = y < height - 1 and tile_map[y+1][x] == 'W'
-        
-        neighbor_count = sum([left, right, top, bottom])
-        
-        if neighbor_count == 0 or neighbor_count >= 4:
-            return base_type
-        
-        left_type = None
-        right_type = None
-        
-        if left:
-            left_zone_x = (x-1) // zone_size
-            left_zone_y = y // zone_size
-            left_type = 'type0' if (left_zone_x + left_zone_y) % 2 == 0 else 'type1'
-        
-        if right:
-            right_zone_x = (x+1) // zone_size
-            right_zone_y = y // zone_size
-            right_type = 'type0' if (right_zone_x + right_zone_y) % 2 == 0 else 'type1'
-        
-        if left and right:
-            if left_type != right_type:
-                if base_type == 'type0':
-                    return 'transition_0_1'
-                else:
-                    return 'transition_1_0'
-        
-        return base_type
     
     def load_level_from_map(self, level_num):
         self.platforms = []
@@ -901,8 +1101,24 @@ class GameScene(Scene):
                     self.platforms.append(platform_rect)
                     
                 elif char == 'P' and not player_spawned:
-                    self.player.position = pygame.Vector2(x * tile_size, (y - 1) * tile_size)
+                    spawn_x = x * tile_size
+                    spawn_y = (y - 1) * tile_size
+                    
+                    self.player.position = pygame.Vector2(spawn_x, spawn_y)
+                    self.player.hitbox.x = spawn_x
+                    self.player.hitbox.y = spawn_y
+                    self.player.rect.center = self.player.hitbox.center
+                    
+                    self.player.velocity = pygame.Vector2(0, 0)
+                    self.player.acceleration = pygame.Vector2(0, 0)
+                    self.player.on_ground = False
+                    self.player.wall_left = False
+                    self.player.wall_right = False
+                    self.player.moving = False
+                    self.player.current_state = 'idle'
+                    
                     player_spawned = True
+                    print(f"Player spawnado em: ({spawn_x}, {spawn_y})")
                     
                 elif char == 'G':
                     enemy = Enemy(x * tile_size, (y - 1) * tile_size, 'guard')
@@ -924,6 +1140,13 @@ class GameScene(Scene):
                         enemy.position.y + enemy.rect.height <= platform.top + 10):
                         enemy.set_platform_bounds(platform.left, platform.right - enemy.rect.width)
                         break
+        
+        if not player_spawned:
+            print("AVISO: Nenhum ponto de spawn 'P' encontrado no mapa! Usando posição padrão.")
+            self.player.position = pygame.Vector2(100, 400)
+        
+        # Reconfigurar o background parallax para o novo nível
+        self.setup_parallax_background()
     
     def load_level(self, level_num):
         if data.maps and 'levels' in data.maps:
@@ -932,10 +1155,12 @@ class GameScene(Scene):
             print("Nenhum mapa carregado!")
     
     def render(self, renderer:Renderer):
-        bg_key = f'level{data.current_level}'
-        if bg_key in data.assets['backgrounds']:
-            renderer.blit(data.assets['backgrounds'][bg_key], (0, 0))
+        # Renderizar background parallax
+        if self.parallax_bg:
+            self.parallax_bg.render(renderer)
         else:
+            # Fallback: fundo colorido
+            bg_key = f'level{data.current_level}'
             if data.current_level in [1, 2]:
                 renderer.fill_screen((50, 120, 80))
             elif data.current_level in [3, 4]:
@@ -943,6 +1168,7 @@ class GameScene(Scene):
             else:
                 renderer.fill_screen((100, 80, 60))
         
+        # Renderizar tiles do nível
         for tile_row in self.level_tiles:
             for tile_data in tile_row:
                 tile_sprite, tile_pos, tile_key, is_solid = tile_data
@@ -950,6 +1176,7 @@ class GameScene(Scene):
                     screen_pos = self.camera.world_to_screen(pygame.Vector2(tile_pos[0], tile_pos[1]))
                     renderer.blit(tile_sprite, screen_pos)
         
+        # Renderizar inimigos, projéteis, bandeira e player
         for enemy in self.enemies:
             enemy.render(renderer, self.camera)
         
@@ -977,6 +1204,7 @@ class GameScene(Scene):
                 platform_pos = self.camera.world_to_screen(pygame.Vector2(platform.x, platform.y))
                 renderer.draw_rect(platform_pos.x, platform_pos.y, platform.width, platform.height, (0, 0, 255, 0.5))
         
+        # UI overlay
         renderer.draw_rect(0, 0, self.engine.width, 60*data.ratio.y, (0, 0, 0, 150))
     
     def update(self, dt):
@@ -1031,8 +1259,8 @@ class GameScene(Scene):
             else:
                 self.load_level(data.current_level)
                 self.level_display.set_text(f'Fase {data.current_level}/5')
-                self.player.position = pygame.Vector2(100, 400)
                 self.player.health = 3
+                self.player.stamina = 100
 
 def main():
     try:
