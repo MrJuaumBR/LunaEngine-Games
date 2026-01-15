@@ -1,772 +1,1163 @@
-#!/usr/bin/env python3
-"""
-Game Launcher for LunaEngine Games
-Supports both GitHub and local modes
-"""
+import os, sys, json, requests
+from typing import Literal, Optional, List, Dict, Set, Tuple
+import customtkinter as tk
+from PIL import Image, ImageTk
+import io
+from downloader import Downloader
 
-import json
-import os
-import sys
-import subprocess
-import argparse
-import webbrowser
-from pathlib import Path
-from tkinter import *
-from tkinter import ttk, messagebox, font
-import requests
+run_mode: Literal['--local', '--remote'] = '--local'
 
-# Adicionar o diretório atual ao path para imports
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+if len(sys.argv) >= 2:
+    if sys.argv[1] in ['--local', '--remote']: 
+        run_mode = sys.argv[1]
+        
+class Path:
+    fonts = os.path.join(os.getcwd(), 'assets', 'fonts')
+    icons = os.path.join(os.getcwd(), 'assets', 'icons')
+    games = os.path.join(os.getcwd(), 'games')
+    temp = os.path.join(os.getcwd(), 'temp')
+    cache = os.path.join(os.getcwd(), 'cache')
+    config = os.path.join(os.getcwd(), 'config')
+    github = 'https://api.github.com/repos/MrJuaumBR/LunaEngine-Games/contents/games'
+    data_remote = 'https://raw.githubusercontent.com/MrJuaumBR/LunaEngine-Games/refs/heads/main/games/data.json'
+    
+# Load fonts if they exist
+if os.path.exists(Path.fonts):
+    roboto_mono_path = os.path.join(Path.fonts, 'RobotoMono.ttf')
+    roboto_serif_path = os.path.join(Path.fonts, 'RobotoSerif.ttf')
+    
+    if os.path.exists(roboto_mono_path):
+        tk.FontManager.load_font(roboto_mono_path)
+    if os.path.exists(roboto_serif_path):
+        tk.FontManager.load_font(roboto_serif_path)
 
-class GameLauncher:
-    def __init__(self, root, mode='local'):
-        self.root = root
-        self.mode = mode  # 'github' ou 'local'
-        self.root.title(f"LunaEngine Games Launcher [{mode.capitalize()} Mode]")
-        self.root.geometry("900x700")
-        self.root.minsize(800, 600)
-        
-        # Determinar caminhos base
-        self.base_dir = Path(__file__).parent.parent  # Pasta LunaEngine-Games
-        self.launcher_dir = Path(__file__).parent      # Pasta Launcher
-        self.games_dir = self.base_dir / "games"       # Pasta games
-        
-        # Carregar configurações
-        self.config = self.load_config()
-        self.theme = self.load_theme(self.config.get('theme', 'dark'))
-        
-        # Carregar dados dos jogos
-        self.data = self.load_data()
-        self.games = self.data.get('games', [])
-        
-        # URLs do GitHub
-        if self.mode == 'github':
-            self.github_raw_url = "https://github.com/MrJuaumBR/LunaEngine-Games/raw/main"
-            self.github_api_url = "https://api.github.com/repos/MrJuaumBR/LunaEngine-Games/contents"
-        
-        # Setup da interface
-        self.setup_ui()
-        
-        # Verificar jogos instalados
-        self.update_games_status()
-        
-        # Centralizar janela
-        self.center_window()
-    
-    def center_window(self):
-        """Centraliza a janela na tela"""
-        self.root.update_idletasks()
-        width = self.root.winfo_width()
-        height = self.root.winfo_height()
-        x = (self.root.winfo_screenwidth() // 2) - (width // 2)
-        y = (self.root.winfo_screenheight() // 2) - (height // 2)
-        self.root.geometry(f'{width}x{height}+{x}+{y}')
-    
-    def load_config(self):
-        """Carrega as configurações do usuário"""
-        config_path = self.launcher_dir / "config.json"
-        default_config = {
-            "theme": "dark",
-            "language": "en",
-            "auto_update": False,
-            "last_mode": "local"
+class ThemeManager:
+    THEMES = {
+        'dark': {
+            'name': 'Dark',
+            'bg': '#121212',
+            'fg': '#1e1e1e',
+            'card_bg': '#252525',
+            'card_border': '#333333',
+            'text_primary': '#ffffff',
+            'text_secondary': '#aaaaaa',
+            'text_accent': '#4ecdc4',
+            'button_primary': '#2ecc71',
+            'button_primary_hover': '#27ae60',
+            'button_secondary': '#3498db',
+            'button_secondary_hover': '#2980b9',
+            'button_update': '#e74c3c',
+            'button_update_hover': '#c0392b',
+            'tag_bg': '#3a3a3a',
+            'scrollbar': '#444444',
+            'success': '#2ecc71',
+            'info': '#3498db',
+            'warning': '#f39c12',
+            'danger': '#e74c3c',
+            'sidebar': '#1a1a1a',
+            'sidebar_border': '#2a2a2a',
+            'input_bg': '#2a2a2a',
+            'input_border': '#3a3a3a',
+            'installed_badge': '#2ecc71',
+            'update_badge': '#e74c3c'
+        },
+        'light': {
+            'name': 'Light',
+            'bg': '#f5f5f5',
+            'fg': '#ffffff',
+            'card_bg': '#ffffff',
+            'card_border': '#e0e0e0',
+            'text_primary': '#333333',
+            'text_secondary': '#666666',
+            'text_accent': '#2c82c9',
+            'button_primary': '#4a90e2',
+            'button_primary_hover': '#3a7bc8',
+            'button_secondary': '#50c878',
+            'button_secondary_hover': '#40b868',
+            'button_update': '#ff6b6b',
+            'button_update_hover': '#ff5252',
+            'tag_bg': '#f0f0f0',
+            'scrollbar': '#cccccc',
+            'success': '#50c878',
+            'info': '#4a90e2',
+            'warning': '#ffa500',
+            'danger': '#ff6b6b',
+            'sidebar': '#2c3e50',
+            'sidebar_border': '#34495e',
+            'input_bg': '#ffffff',
+            'input_border': '#dddddd',
+            'installed_badge': '#50c878',
+            'update_badge': '#ff6b6b'
         }
-        
-        try:
-            if config_path.exists():
-                with open(config_path, 'r') as f:
-                    config = json.load(f)
-                    # Garantir que todas as chaves existam
-                    for key in default_config:
-                        if key not in config:
-                            config[key] = default_config[key]
-                    return config
-        except Exception as e:
-            print(f"Error loading config: {e}")
-        
-        # Criar configuração padrão
-        with open(config_path, 'w') as f:
-            json.dump(default_config, f, indent=2)
-        return default_config
+    }
     
-    def save_config(self):
-        """Salva as configurações do usuário"""
-        config_path = self.launcher_dir / "config.json"
-        with open(config_path, 'w') as f:
-            json.dump(self.config, f, indent=2)
+    @classmethod
+    def get_theme(cls, theme_name: str) -> dict:
+        return cls.THEMES.get(theme_name, cls.THEMES['dark'])
     
-    def load_theme(self, theme_name):
-        """Carrega o tema selecionado"""
-        theme_file = self.launcher_dir / "assets" / f"{theme_name}_theme.json"
-        
-        # Tema escuro padrão
-        default_dark_theme = {
-            "name": "dark",
-            "bg_color": "#1a1a2e",
-            "card_color": "#16213e",
-            "text_color": "#e6e6e6",
-            "accent_color": "#0f3460",
-            "button_bg": "#4CAF50",
-            "button_fg": "white",
-            "secondary_color": "#2d4059",
-            "highlight_color": "#00adb5",
-            "error_color": "#ff6b6b",
-            "success_color": "#4CAF50",
-            "warning_color": "#ffa726",
-            "border_color": "#30475e"
-        }
-        
-        # Tema claro
-        default_light_theme = {
-            "name": "light",
-            "bg_color": "#f5f7fa",
-            "card_color": "#ffffff",
-            "text_color": "#2d4059",
-            "accent_color": "#3498db",
-            "button_bg": "#3498db",
-            "button_fg": "white",
-            "secondary_color": "#ecf0f1",
-            "highlight_color": "#e74c3c",
-            "error_color": "#e74c3c",
-            "success_color": "#2ecc71",
-            "warning_color": "#f39c12",
-            "border_color": "#bdc3c7"
-        }
-        
-        try:
-            if theme_file.exists():
-                with open(theme_file, 'r') as f:
-                    return json.load(f)
-        except:
-            pass
-        
-        # Retornar tema padrão baseado no nome
-        if theme_name == "light":
-            return default_light_theme
-        return default_dark_theme
+    @classmethod
+    def get_theme_names(cls) -> list:
+        return list(cls.THEMES.keys())
+
+class FilterManager:
+    SORT_OPTIONS = {
+        'name': 'Name (A-Z)',
+        'name_desc': 'Name (Z-A)',
+        'author': 'Author (A-Z)',
+        'author_desc': 'Author (Z-A)',
+        'size': 'Size (Smallest)',
+        'size_desc': 'Size (Largest)',
+        'files': 'Files (Fewest)',
+        'files_desc': 'Files (Most)',
+        'version': 'Version (Oldest)',
+        'version_desc': 'Version (Newest)',
+        'installed': 'Installed First',
+        'not_installed': 'Not Installed First'
+    }
     
-    def load_data(self):
-        """Carrega os dados dos jogos baseado no modo"""
-        if self.mode == 'local':
-            # Modo local: carregar do arquivo data.json na pasta games
-            data_path = self.games_dir / "data.json"
-            if data_path.exists():
-                try:
-                    with open(data_path, 'r', encoding='utf-8') as f:
-                        data = json.load(f)
-                        # Corrigir paths para serem absolutos
-                        for game in data.get('games', []):
-                            if 'path' in game:
-                                # Converter path relativo para absoluto
-                                game['full_path'] = str(self.games_dir / game['path'])
-                        return data
-                except Exception as e:
-                    messagebox.showerror("Error", f"Failed to load data.json: {e}")
+    INSTALLATION_FILTERS = {
+        'all': 'All Games',
+        'installed': 'Installed Only',
+        'not_installed': 'Not Installed',
+        'updates': 'Updates Available'
+    }
+    
+    @staticmethod
+    def sort_games(games: List[Dict], sort_by: str, downloader: Downloader) -> List[Dict]:
+        """Sort games with installation awareness"""
+        if sort_by == 'installed':
+            return sorted(games, key=lambda x: (not downloader.is_game_installed(x['game_name']), x['game_name'].lower()))
+        elif sort_by == 'not_installed':
+            return sorted(games, key=lambda x: (downloader.is_game_installed(x['game_name']), x['game_name'].lower()))
+        
+        if sort_by == 'name':
+            return sorted(games, key=lambda x: x['game_name'].lower())
+        elif sort_by == 'name_desc':
+            return sorted(games, key=lambda x: x['game_name'].lower(), reverse=True)
+        elif sort_by == 'author':
+            return sorted(games, key=lambda x: x['game_author'].lower())
+        elif sort_by == 'author_desc':
+            return sorted(games, key=lambda x: x['game_author'].lower(), reverse=True)
+        elif sort_by == 'size':
+            return sorted(games, key=lambda x: x['total_size'])
+        elif sort_by == 'size_desc':
+            return sorted(games, key=lambda x: x['total_size'], reverse=True)
+        elif sort_by == 'files':
+            return sorted(games, key=lambda x: x['total_files'])
+        elif sort_by == 'files_desc':
+            return sorted(games, key=lambda x: x['total_files'], reverse=True)
+        elif sort_by == 'version':
+            return sorted(games, key=lambda x: [int(n) for n in x['game_version'].split('.')])
+        elif sort_by == 'version_desc':
+            return sorted(games, key=lambda x: [int(n) for n in x['game_version'].split('.')], reverse=True)
+        return games
+    
+    @staticmethod
+    def filter_games(games: List[Dict], filters: Dict, downloader: Downloader) -> List[Dict]:
+        """Filter games based on multiple criteria"""
+        filtered = games
+        
+        # Search filter
+        if filters.get('search'):
+            search_lower = filters['search'].lower()
+            filtered = [g for g in filtered if 
+                       search_lower in g['game_name'].lower() or 
+                       search_lower in g['game_description'].lower() or
+                       any(search_lower in tag.lower() for tag in g['game_tags'])]
+        
+        # Category filter
+        if filters.get('category') and filters['category'] != 'all':
+            filtered = [g for g in filtered if g['game_category'].lower() == filters['category'].lower()]
+        
+        # Tags filter
+        if filters.get('tags') and len(filters['tags']) > 0:
+            filtered = [g for g in filtered if 
+                       any(tag.lower() in [t.lower() for t in g['game_tags']] 
+                           for tag in filters['tags'])]
+        
+        # Author filter
+        if filters.get('author') and filters['author'] != 'all':
+            filtered = [g for g in filtered if g['game_author'].lower() == filters['author'].lower()]
+        
+        # Installation status filter
+        installation_filter = filters.get('installation', 'all')
+        if installation_filter == 'installed':
+            filtered = [g for g in filtered if downloader.is_game_installed(g['game_name'])]
+        elif installation_filter == 'not_installed':
+            filtered = [g for g in filtered if not downloader.is_game_installed(g['game_name'])]
+        elif installation_filter == 'updates':
+            filtered = [g for g in filtered if 
+                       downloader.is_game_installed(g['game_name']) and 
+                       downloader.needs_update(g['game_name'], g['game_version'])[0]]
+        
+        return filtered
+
+class TagManager:
+    """Manages tag selection and display"""
+    
+    @staticmethod
+    def create_tag_widgets(parent, tags: Set[str], selected_tags: Set[str], 
+                          theme: Dict, on_tag_toggle=None, max_height=150):
+        """Create scrollable tag selection widget"""
+        frame = tk.CTkFrame(parent, fg_color="transparent")
+        
+        # Label
+        tk.CTkLabel(frame,
+                   text="Tags:",
+                   font=("RobotoMono", 11),
+                   text_color=theme['text_secondary']).pack(anchor="w", pady=(0, 8))
+        
+        # Scrollable tag container
+        tag_container = tk.CTkScrollableFrame(frame, 
+                                             height=max_height,
+                                             fg_color=theme['input_bg'],
+                                             border_width=1,
+                                             border_color=theme['input_border'])
+        tag_container.pack(fill="x", pady=(0, 10))
+        
+        # Dictionary to store tag buttons for later reference
+        tag_buttons = {}
+        
+        # Create tag buttons
+        sorted_tags = sorted(list(tags))
+        for tag in sorted_tags:
+            is_selected = tag in selected_tags
+            
+            btn_color = theme['button_primary'] if is_selected else theme['input_bg']
+            hover_color = theme['button_primary_hover'] if is_selected else theme['sidebar_border']
+            text_color = theme['text_primary'] if is_selected else theme['text_secondary']
+            
+            btn = tk.CTkButton(tag_container,
+                              text=tag,
+                              font=("RobotoMono", 10),
+                              fg_color=btn_color,
+                              hover_color=hover_color,
+                              text_color=text_color,
+                              height=30,
+                              anchor="w",
+                              command=lambda t=tag: on_tag_toggle(t) if on_tag_toggle else None)
+            btn.pack(fill="x", padx=5, pady=2)
+            tag_buttons[tag] = btn
+        
+        # Clear tags button
+        clear_btn = tk.CTkButton(frame,
+                                text="Clear Tags",
+                                font=("RobotoMono", 10),
+                                fg_color=theme['button_secondary'],
+                                hover_color=theme['button_secondary_hover'],
+                                command=lambda: on_tag_toggle('clear_all') if on_tag_toggle else None,
+                                height=30)
+        clear_btn.pack(fill="x")
+        
+        # Store tag buttons in frame for access
+        frame.tag_buttons = tag_buttons
+        frame.tag_container = tag_container
+        frame.clear_btn = clear_btn
+        
+        return frame
+
+class ResponsiveGameCard(tk.CTkFrame):
+    def __init__(self, master, game_data, game_id, theme: dict, downloader: Downloader, **kwargs):
+        super().__init__(master, **kwargs)
+        self.game_data = game_data
+        self.game_id = game_id
+        self.theme = theme
+        self.downloader = downloader
+        self.install_status = downloader.get_installation_status(game_data['game_name'])
+        
+        self.configure(fg_color=theme['card_bg'], 
+                      corner_radius=12, 
+                      border_width=1, 
+                      border_color=theme['card_border'])
+        
+        self.create_widgets()
+    
+    def create_widgets(self):
+        # Main container
+        main_frame = tk.CTkFrame(self, fg_color="transparent")
+        main_frame.pack(fill="both", expand=True, padx=12, pady=12)
+        
+        # Status badge
+        self.create_status_badge(main_frame)
+        
+        # Title and version
+        title_frame = tk.CTkFrame(main_frame, fg_color="transparent", height=30)
+        title_frame.pack(fill="x", pady=(0, 8))
+        
+        # Title
+        title_label = tk.CTkLabel(title_frame, 
+                                 text=self.game_data["game_name"], 
+                                 font=("RobotoSerif", 16, "bold"),
+                                 text_color=self.theme['text_primary'],
+                                 anchor="w")
+        title_label.pack(side="left", fill="x", expand=True)
+        
+        # Version with update indicator
+        version_text = f"v{self.game_data['game_version']}"
+        if self.install_status['installed']:
+            needs_update, current_version = self.downloader.needs_update(
+                self.game_data['game_name'], 
+                self.game_data['game_version']
+            )
+            if needs_update:
+                version_text = f"v{current_version} → v{self.game_data['game_version']}"
+        
+        version_label = tk.CTkLabel(title_frame, 
+                                   text=version_text,
+                                   font=("RobotoMono", 10),
+                                   text_color=self.theme['text_secondary'])
+        version_label.pack(side="right")
+        
+        # Tags (compact)
+        tags_frame = tk.CTkFrame(main_frame, fg_color="transparent", height=24)
+        tags_frame.pack(fill="x", pady=(0, 8))
+        
+        for i, tag in enumerate(self.game_data["game_tags"][:2]):
+            tk.CTkLabel(tags_frame, 
+                       text=tag,
+                       font=("RobotoMono", 9),
+                       text_color=self.theme['text_accent'],
+                       fg_color=self.theme['tag_bg'],
+                       corner_radius=10,
+                       padx=6, pady=2).pack(side="left", padx=(0, 4))
+        
+        # Description
+        desc_text = tk.CTkTextbox(main_frame, 
+                                 height=50,
+                                 fg_color=self.theme['fg'], 
+                                 text_color=self.theme['text_secondary'], 
+                                 border_width=0,
+                                 font=("RobotoMono", 10), 
+                                 wrap="word")
+        desc_text.insert("1.0", self.game_data["game_description"][:100] + 
+                        ("..." if len(self.game_data["game_description"]) > 100 else ""))
+        desc_text.configure(state="disabled")
+        desc_text.pack(fill="x", pady=(0, 8))
+        
+        # Info bar
+        info_frame = tk.CTkFrame(main_frame, fg_color="transparent")
+        info_frame.pack(fill="x", pady=(0, 8))
+        
+        # Author
+        tk.CTkLabel(info_frame,
+                   text=self.game_data['game_author'][:15],
+                   font=("RobotoMono", 9),
+                   text_color=self.theme['text_secondary'],
+                   anchor="w").pack(side="left", fill="x", expand=True)
+        
+        # Size
+        tk.CTkLabel(info_frame,
+                   text=f"{self.game_data['total_size']:.1f}MB",
+                   font=("RobotoMono", 9),
+                   text_color=self.theme['text_secondary']).pack(side="right")
+        
+        # Files
+        tk.CTkLabel(info_frame,
+                   text=f"{self.game_data['total_files']} files",
+                   font=("RobotoMono", 9),
+                   text_color=self.theme['text_secondary']).pack(side="right", padx=(0, 8))
+        
+        # Action buttons based on installation status
+        self.create_action_buttons(main_frame)
+    
+    def create_status_badge(self, parent):
+        """Create installation status badge"""
+        status_frame = tk.CTkFrame(parent, fg_color="transparent", height=24)
+        status_frame.pack(fill="x", pady=(0, 8))
+        
+        if self.install_status['installed']:
+            needs_update, current_version = self.downloader.needs_update(
+                self.game_data['game_name'], 
+                self.game_data['game_version']
+            )
+            
+            if needs_update:
+                # Update available
+                badge = tk.CTkLabel(status_frame,
+                                   text="UPDATE AVAILABLE",
+                                   font=("RobotoMono", 9, "bold"),
+                                   text_color="#ffffff",
+                                   fg_color=self.theme['update_badge'],
+                                   corner_radius=10,
+                                   padx=8, pady=2)
+                badge.pack(side="left")
             else:
-                messagebox.showwarning("Warning", 
-                    f"data.json not found in {self.games_dir}\n"
-                    "Running in local mode with auto-detected games.")
-                return self.scan_local_games()
+                # Installed and up to date
+                badge = tk.CTkLabel(status_frame,
+                                   text="INSTALLED",
+                                   font=("RobotoMono", 9, "bold"),
+                                   text_color="#ffffff",
+                                   fg_color=self.theme['installed_badge'],
+                                   corner_radius=10,
+                                   padx=8, pady=2)
+                badge.pack(side="left")
         else:
-            # Modo GitHub: tentar baixar data.json
-            try:
-                response = requests.get(f"{self.github_raw_url}/games/data.json", timeout=10)
-                if response.status_code == 200:
-                    data = response.json()
-                    # Adicionar URLs para download
-                    for game in data.get('games', []):
-                        game['download_url'] = f"{self.github_raw_url}/games/{game['path'].replace('main.py', '')}"
-                    return data
-                else:
-                    messagebox.showerror("Error", 
-                        f"Failed to fetch data from GitHub\nStatus: {response.status_code}")
-            except Exception as e:
-                messagebox.showerror("Error", f"Network error: {e}")
-        
-        return {"games": []}
+            # Not installed
+            badge = tk.CTkLabel(status_frame,
+                               text="NOT INSTALLED",
+                               font=("RobotoMono", 9, "bold"),
+                               text_color=self.theme['text_secondary'],
+                               fg_color=self.theme['tag_bg'],
+                               corner_radius=10,
+                               padx=8, pady=2)
+            badge.pack(side="left")
     
-    def scan_local_games(self):
-        """Escaneia a pasta local de jogos"""
-        games = []
+    def create_action_buttons(self, parent):
+        """Create action buttons based on installation status"""
+        button_frame = tk.CTkFrame(parent, fg_color="transparent")
+        button_frame.pack(fill="x")
         
-        if not self.games_dir.exists():
-            self.games_dir.mkdir(parents=True)
-            return {"games": []}
-        
-        # Procurar por pastas de jogos
-        for item in self.games_dir.iterdir():
-            if item.is_dir():
-                # Ignorar pastas que não são jogos
-                if item.name.startswith('.') or item.name == '__pycache__':
-                    continue
+        if self.install_status['installed']:
+            needs_update, current_version = self.downloader.needs_update(
+                self.game_data['game_name'], 
+                self.game_data['game_version']
+            )
+            
+            if needs_update:
+                # Update button
+                update_btn = tk.CTkButton(button_frame,
+                                        text="UPDATE",
+                                        fg_color=self.theme['button_update'],
+                                        hover_color=self.theme['button_update_hover'],
+                                        font=("RobotoMono", 11, "bold"),
+                                        height=28,
+                                        command=self.update_game)
+                update_btn.pack(side="left", fill="x", expand=True, padx=(0, 4))
                 
-                # Procurar por main.py
-                main_file = item / "main.py"
-                if not main_file.exists():
-                    # Procurar por qualquer arquivo .py
-                    py_files = list(item.glob("*.py"))
-                    if py_files:
-                        main_file = py_files[0]
-                    else:
-                        continue
+                # Play button
+                play_btn = tk.CTkButton(button_frame,
+                                       text="PLAY",
+                                       fg_color=self.theme['button_primary'],
+                                       hover_color=self.theme['button_primary_hover'],
+                                       font=("RobotoMono", 11),
+                                       height=28,
+                                       command=self.play_game)
+                play_btn.pack(side="left", fill="x", expand=True, padx=(4, 0))
                 
-                # Criar entrada do jogo
-                game_data = {
-                    "name": item.name.replace('_', ' ').title(),
-                    "path": f"{item.name}/{main_file.name}",
-                    "full_path": str(main_file),
-                    "version": "1.0.0",
-                    "description": f"A game located in {item.name} folder",
-                    "icon": "",
-                    "requirements": []
-                }
+                # Uninstall button (small)
+                uninstall_btn = tk.CTkButton(button_frame,
+                                           text="✕",
+                                           width=30,
+                                           fg_color=self.theme['danger'],
+                                           hover_color="#ff5252",
+                                           font=("RobotoMono", 11),
+                                           height=28,
+                                           command=self.uninstall_game)
+                uninstall_btn.pack(side="right", padx=(4, 0))
+            else:
+                # Play button (primary)
+                play_btn = tk.CTkButton(button_frame,
+                                       text="PLAY",
+                                       fg_color=self.theme['button_primary'],
+                                       hover_color=self.theme['button_primary_hover'],
+                                       font=("RobotoMono", 11, "bold"),
+                                       height=28,
+                                       command=self.play_game)
+                play_btn.pack(side="left", fill="x", expand=True, padx=(0, 4))
                 
-                # Verificar se existe requirements.txt
-                req_file = item / "requirements.txt"
-                if req_file.exists():
-                    try:
-                        with open(req_file, 'r') as f:
-                            game_data["requirements"] = [line.strip() for line in f if line.strip()]
-                    except:
-                        pass
+                # Info button
+                info_btn = tk.CTkButton(button_frame,
+                                       text="INFO",
+                                       fg_color=self.theme['button_secondary'],
+                                       hover_color=self.theme['button_secondary_hover'],
+                                       font=("RobotoMono", 11),
+                                       height=28,
+                                       command=self.show_details)
+                info_btn.pack(side="left", fill="x", expand=True, padx=(4, 0))
                 
-                games.append(game_data)
-        
-        return {"games": games}
+                # Uninstall button
+                uninstall_btn = tk.CTkButton(button_frame,
+                                           text="UNINSTALL",
+                                           fg_color=self.theme['danger'],
+                                           hover_color="#ff5252",
+                                           font=("RobotoMono", 11),
+                                           height=28,
+                                           command=self.uninstall_game)
+                uninstall_btn.pack(side="right", fill="x", expand=True)
+        else:
+            # Install button
+            install_btn = tk.CTkButton(button_frame,
+                                      text="INSTALL",
+                                      fg_color=self.theme['button_primary'],
+                                      hover_color=self.theme['button_primary_hover'],
+                                      font=("RobotoMono", 11, "bold"),
+                                      height=28,
+                                      command=self.install_game)
+            install_btn.pack(side="left", fill="x", expand=True, padx=(0, 4))
+            
+            # Info button
+            info_btn = tk.CTkButton(button_frame,
+                                   text="INFO",
+                                   fg_color=self.theme['button_secondary'],
+                                   hover_color=self.theme['button_secondary_hover'],
+                                   font=("RobotoMono", 11),
+                                   height=28,
+                                   command=self.show_details)
+            info_btn.pack(side="right", fill="x", expand=True, padx=(4, 0))
     
-    def setup_ui(self):
-        """Configura a interface do usuário"""
-        self.root.configure(bg=self.theme['bg_color'])
+    def install_game(self):
+        print(f"Installing: {self.game_data['game_name']}")
+        # Call downloader
+        success = self.downloader.download_game(self.game_data)
+        if success:
+            # Refresh the card
+            self.master.master.refresh_games()
+    
+    def update_game(self):
+        print(f"Updating: {self.game_data['game_name']}")
+        success = self.downloader.download_game(self.game_data)
+        if success:
+            self.master.master.refresh_games()
+    
+    def uninstall_game(self):
+        print(f"Uninstalling: {self.game_data['game_name']}")
+        success = self.downloader.uninstall_game(self.game_data['game_name'])
+        if success:
+            self.master.master.refresh_games()
+    
+    def play_game(self):
+        print(f"Playing: {self.game_data['game_name']}")
+        # Add game launch logic here
+    
+    def show_details(self):
+        # Create details dialog
+        dialog = tk.CTkToplevel(self)
+        dialog.title(f"Details - {self.game_data['game_name']}")
+        dialog.geometry("500x600")
+        dialog.minsize(400, 500)
+        dialog.transient(self.master)
+        dialog.grab_set()
+        dialog.configure(fg_color=self.theme['bg'])
         
-        # Criar menu
+        # Scrollable content
+        scroll_frame = tk.CTkScrollableFrame(dialog, fg_color=self.theme['bg'])
+        scroll_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        # Installation status
+        status_text = "Not installed"
+        status_color = self.theme['text_secondary']
+        
+        if self.install_status['installed']:
+            needs_update, current_version = self.downloader.needs_update(
+                self.game_data['game_name'], 
+                self.game_data['game_version']
+            )
+            if needs_update:
+                status_text = f"Installed (v{current_version}) - Update available"
+                status_color = self.theme['update_badge']
+            else:
+                status_text = f"Installed (v{current_version}) - Up to date"
+                status_color = self.theme['installed_badge']
+        
+        tk.CTkLabel(scroll_frame,
+                   text=status_text,
+                   font=("RobotoMono", 11, "bold"),
+                   text_color=status_color).pack(anchor="w", pady=(0, 15))
+        
+        # Game info
+        info_grid = [
+            ("Name", self.game_data['game_name']),
+            ("Version", self.game_data['game_version']),
+            ("Author", self.game_data['game_author']),
+            ("Category", self.game_data['game_category']),
+            ("Size", f"{self.game_data['total_size']:.2f} MB"),
+            ("Files", str(self.game_data['total_files']))
+        ]
+        
+        for label, value in info_grid:
+            frame = tk.CTkFrame(scroll_frame, fg_color="transparent")
+            frame.pack(fill="x", pady=3)
+            
+            tk.CTkLabel(frame,
+                       text=f"{label}:",
+                       font=("RobotoMono", 11, "bold"),
+                       text_color=self.theme['text_secondary'],
+                       width=80,
+                       anchor="w").pack(side="left")
+            
+            tk.CTkLabel(frame,
+                       text=value,
+                       font=("RobotoMono", 11),
+                       text_color=self.theme['text_primary'],
+                       anchor="w").pack(side="left", fill="x", expand=True)
+        
+        # Description
+        tk.CTkLabel(scroll_frame,
+                   text="Description:",
+                   font=("RobotoMono", 11, "bold"),
+                   text_color=self.theme['text_secondary']).pack(anchor="w", pady=(15, 5))
+        
+        desc_text = tk.CTkTextbox(scroll_frame,
+                                 height=100,
+                                 fg_color=self.theme['fg'],
+                                 text_color=self.theme['text_secondary'],
+                                 border_width=0,
+                                 font=("RobotoMono", 11))
+        desc_text.insert("1.0", self.game_data['game_description'])
+        desc_text.configure(state="disabled")
+        desc_text.pack(fill="x", pady=(0, 10))
+        
+        # All tags
+        tk.CTkLabel(scroll_frame,
+                   text="Tags:",
+                   font=("RobotoMono", 11, "bold"),
+                   text_color=self.theme['text_secondary']).pack(anchor="w", pady=(5, 5))
+        
+        tags_frame = tk.CTkFrame(scroll_frame, fg_color="transparent")
+        tags_frame.pack(fill="x", pady=(0, 10))
+        
+        for tag in self.game_data['game_tags']:
+            tk.CTkLabel(tags_frame,
+                       text=tag,
+                       font=("RobotoMono", 10),
+                       text_color=self.theme['text_accent'],
+                       fg_color=self.theme['tag_bg'],
+                       corner_radius=12,
+                       padx=8, pady=3).pack(side="left", padx=(0, 5))
+        
+        # Requirements
+        tk.CTkLabel(scroll_frame,
+                   text="Requirements:",
+                   font=("RobotoMono", 11, "bold"),
+                   text_color=self.theme['text_secondary']).pack(anchor="w", pady=(5, 5))
+        
+        for req in self.game_data['requirements']:
+            tk.CTkLabel(scroll_frame,
+                       text=f"• {req}",
+                       font=("RobotoMono", 10),
+                       text_color=self.theme['text_primary'],
+                       anchor="w").pack(anchor="w", pady=1)
+        
+        close_btn = tk.CTkButton(dialog,
+                                text="Close",
+                                command=dialog.destroy,
+                                fg_color=self.theme['button_secondary'],
+                                hover_color=self.theme['button_secondary_hover'])
+        close_btn.pack(pady=(0, 20))
+
+class App(tk.CTk):
+    def __init__(self):
+        super().__init__()
+        self.game_data: dict = {}
+        self.game_cards = []
+        self.current_theme = 'dark'
+        self.theme_config = ThemeManager.get_theme('dark')
+        
+        # Initialize downloader
+        self.downloader = Downloader(Path.github)
+        
+        # Filter state
+        self.current_filters = {
+            'category': 'all',
+            'tags': set(),
+            'author': 'all',
+            'sort_by': 'name',
+            'search': '',
+            'installation': 'all'
+        }
+        
+        # Filter data
+        self.all_tags = set()
+        self.all_authors = set()
+        self.all_categories = set()
+        
+        # Set appearance
+        tk.set_appearance_mode("dark")
+        
+        self.title('LunaLauncher')
+        self.geometry('1300x850')
+        self.minsize(1000, 650)
+        
+        # Create UI first
         self.create_menu()
         
-        # Cabeçalho
-        self.create_header()
-        
-        # Área principal
-        self.create_main_area()
-        
-        # Barra de status
-        self.create_status_bar()
+        # Then load data and populate
+        self.load_initial_data()
     
-    def create_menu(self):
-        """Cria a barra de menu"""
-        menubar = Menu(self.root, bg=self.theme['secondary_color'], fg=self.theme['text_color'])
-        self.root.config(menu=menubar)
-        
-        # File menu
-        file_menu = Menu(menubar, tearoff=0, bg=self.theme['card_color'], fg=self.theme['text_color'])
-        menubar.add_cascade(label="File", menu=file_menu)
-        file_menu.add_command(label="Refresh Games", command=self.refresh_games)
-        
-        if self.mode == 'github':
-            file_menu.add_command(label="Switch to Local Mode", 
-                                command=self.switch_to_local_mode)
-        else:
-            file_menu.add_command(label="Switch to GitHub Mode", 
-                                command=self.switch_to_github_mode)
-        
-        file_menu.add_separator()
-        file_menu.add_command(label="Open Games Folder", command=self.open_games_folder)
-        file_menu.add_separator()
-        file_menu.add_command(label="Exit", command=self.root.quit)
-        
-        # Settings menu
-        settings_menu = Menu(menubar, tearoff=0, bg=self.theme['card_color'], fg=self.theme['text_color'])
-        menubar.add_cascade(label="Settings", menu=settings_menu)
-        
-        # Theme submenu
-        theme_menu = Menu(settings_menu, tearoff=0, bg=self.theme['card_color'], fg=self.theme['text_color'])
-        settings_menu.add_cascade(label="Theme", menu=theme_menu)
-        theme_menu.add_radiobutton(label="Dark Theme", 
-                                  command=lambda: self.change_theme('dark'),
-                                  variable=StringVar(value=self.config['theme']),
-                                  value='dark')
-        theme_menu.add_radiobutton(label="Light Theme", 
-                                  command=lambda: self.change_theme('light'),
-                                  variable=StringVar(value=self.config['theme']),
-                                  value='light')
-        
-        # Help menu
-        help_menu = Menu(menubar, tearoff=0, bg=self.theme['card_color'], fg=self.theme['text_color'])
-        menubar.add_cascade(label="Help", menu=help_menu)
-        help_menu.add_command(label="About", command=self.show_about)
-        help_menu.add_command(label="View on GitHub", 
-                            command=lambda: webbrowser.open("https://github.com/MrJuaumBR/LunaEngine-Games"))
+    def load_initial_data(self):
+        """Load data and populate UI after creation"""
+        self.get_game_data()
+        self.extract_filter_data()
+        self.update_filter_widgets()
+        self.apply_filters()
     
-    def create_header(self):
-        """Cria o cabeçalho"""
-        header_frame = Frame(self.root, bg=self.theme['accent_color'], height=100)
-        header_frame.pack(fill="x", pady=(0, 10))
-        header_frame.pack_propagate(False)
-        
-        # Título com ícone do modo
-        mode_icon = "💻" if self.mode == 'local' else "🌐"
-        title_text = f"{mode_icon} LunaEngine Games Launcher"
-        
-        title = Label(
-            header_frame,
-            text=title_text,
-            font=("Arial", 24, "bold"),
-            bg=self.theme['accent_color'],
-            fg=self.theme['text_color']
-        )
-        title.pack(expand=True, pady=(20, 5))
-        
-        # Subtítulo
-        if self.mode == 'local':
-            subtitle_text = "Playing games from local folder"
-        else:
-            subtitle_text = "Downloading and playing games from GitHub"
-        
-        subtitle = Label(
-            header_frame,
-            text=subtitle_text,
-            font=("Arial", 11),
-            bg=self.theme['accent_color'],
-            fg=self.theme['text_color']
-        )
-        subtitle.pack(expand=True)
-    
-    def create_main_area(self):
-        """Cria a área principal com lista de jogos"""
-        main_container = Frame(self.root, bg=self.theme['bg_color'])
-        main_container.pack(fill="both", expand=True, padx=20, pady=10)
-        
-        # Container com scrollbar
-        canvas_frame = Frame(main_container, bg=self.theme['bg_color'])
-        canvas_frame.pack(fill="both", expand=True)
-        
-        self.canvas = Canvas(canvas_frame, bg=self.theme['bg_color'], highlightthickness=0)
-        scrollbar = ttk.Scrollbar(canvas_frame, orient="vertical", command=self.canvas.yview)
-        
-        self.scrollable_frame = Frame(self.canvas, bg=self.theme['bg_color'])
-        
-        self.scrollable_frame.bind(
-            "<Configure>",
-            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-        )
-        
-        self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
-        self.canvas.configure(yscrollcommand=scrollbar.set)
-        
-        self.canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-        
-        # Bind mouse wheel
-        self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
-        
-        # Criar cards dos jogos
-        self.create_game_cards()
-    
-    def create_game_cards(self):
-        """Cria cards para cada jogo"""
-        # Limpar frame anterior
-        for widget in self.scrollable_frame.winfo_children():
-            widget.destroy()
-        
-        if not self.games:
-            # Mostrar mensagem quando não há jogos
-            no_games_frame = Frame(self.scrollable_frame, bg=self.theme['bg_color'])
-            no_games_frame.pack(fill="both", expand=True, pady=100)
+    def get_game_data(self):
+        """Load game data from local or remote"""
+        if run_mode == '--local':
+            # Try multiple possible locations for data.json
+            possible_paths = [
+                os.path.join(Path.games, 'data.json'),  # games/data.json
+                os.path.join(os.getcwd(), 'data.json'),  # current directory/data.json
+                os.path.join(os.path.dirname(os.getcwd()), 'games', 'data.json')  # ../games/data.json
+            ]
             
-            if self.mode == 'local':
-                message = "No games found.\n\nPlace game folders in the 'games' directory."
-            else:
-                message = "No games available.\n\nCheck your internet connection or try local mode."
+            data_loaded = False
+            for data_path in possible_paths:
+                if os.path.exists(data_path):
+                    try:
+                        with open(data_path, 'r', encoding='utf-8') as f:
+                            self.game_data = json.load(f)
+                        print(f"Loaded data from: {data_path}")
+                        data_loaded = True
+                        break
+                    except Exception as e:
+                        print(f"Error loading {data_path}: {e}")
             
-            no_games_label = Label(
-                no_games_frame,
-                text=message,
-                font=("Arial", 14),
-                bg=self.theme['bg_color'],
-                fg=self.theme['text_color'],
-                justify="center"
-            )
-            no_games_label.pack(expand=True)
+            if not data_loaded:
+                print("Warning: Could not find data.json in local mode")
+                # Create empty structure
+                self.game_data = {
+                    "info": {
+                        "version": "0.0.0", 
+                        "author": "Unknown",
+                        "total_games": 0
+                    },
+                    "games": []
+                }
+        else:
+            try:
+                print(f"Loading remote data from: {Path.data_remote}")
+                response = requests.get(Path.data_remote, timeout=10)
+                response.raise_for_status()
+                self.game_data = response.json()
+                print(f"Successfully loaded remote data")
+            except Exception as e:
+                print(f"Error loading remote data: {e}")
+                # Fallback to empty data
+                self.game_data = {
+                    "info": {
+                        "version": "0.0.0", 
+                        "author": "Unknown",
+                        "total_games": 0
+                    },
+                    "games": []
+                }
+    
+    def extract_filter_data(self):
+        """Extract unique filter values from game data"""
+        self.all_tags.clear()
+        self.all_authors.clear()
+        self.all_categories.clear()
+        
+        if "games" in self.game_data:
+            for game in self.game_data.get('games', []):
+                self.all_authors.add(game['game_author'])
+                self.all_categories.add(game['game_category'])
+                for tag in game['game_tags']:
+                    self.all_tags.add(tag)
+    
+    def apply_filters(self):
+        """Apply filters and refresh display"""
+        # Remove loading label if exists
+        if hasattr(self, 'loading_label'):
+            self.loading_label.destroy()
+            del self.loading_label
+        
+        # Clear current cards
+        for card in self.game_cards:
+            card.destroy()
+        self.game_cards.clear()
+        
+        # Check if we have games data
+        if "games" not in self.game_data or len(self.game_data['games']) == 0:
+            # Show empty state
+            empty_label = tk.CTkLabel(self.games_container,
+                                     text="No games found\nTry refreshing or check your connection",
+                                     font=("RobotoSerif", 16),
+                                     text_color=self.theme_config['text_secondary'],
+                                     justify="center")
+            empty_label.pack(pady=100, fill="both", expand=True)
+            self.games_header.configure(text="No Games Available")
+            self.stats_label.configure(text="")
             return
         
-        # Criar cards para cada jogo
-        for game in self.games:
-            self.create_game_card(game)
+        # Filter games
+        filtered_games = FilterManager.filter_games(
+            self.game_data.get('games', []),
+            self.current_filters,
+            self.downloader
+        )
+        
+        # Sort games
+        sorted_games = FilterManager.sort_games(
+            filtered_games, 
+            self.current_filters['sort_by'],
+            self.downloader
+        )
+        
+        # Update count
+        self.update_game_count(len(sorted_games), len(self.game_data.get('games', [])))
+        
+        # Create container frame for cards
+        if hasattr(self, 'cards_container'):
+            self.cards_container.destroy()
+        
+        self.cards_container = tk.CTkFrame(self.games_container, fg_color="transparent")
+        self.cards_container.pack(fill="both", expand=True)
+        
+        # Create cards - use pack with side=left and wrap manually
+        for i, game in enumerate(sorted_games):
+            card = ResponsiveGameCard(
+                self.cards_container, 
+                game, 
+                i, 
+                self.theme_config,
+                self.downloader,
+                width=250, 
+                height=320
+            )
+            self.game_cards.append(card)
+            card.pack(side="left", padx=10, pady=10, fill="none", anchor="nw")
+        
+        # Update stats
+        installed_count = len(self.downloader.get_all_installed_games())
+        total_games = len(self.game_data.get('games', []))
+        self.stats_label.configure(text=f"Installed: {installed_count}/{total_games}")
     
-    def create_game_card(self, game):
-        """Cria um card individual para o jogo"""
-        # Verificar se o jogo existe
-        if self.mode == 'local':
-            game_exists = os.path.exists(game.get('full_path', ''))
+    def update_game_count(self, filtered_count: int, total_count: int):
+        """Update game count display"""
+        if filtered_count == total_count:
+            self.games_header.configure(text=f"Games ({total_count})")
         else:
-            game_exists = False  # No GitHub mode, games need to be downloaded first
-        
-        card_frame = Frame(
-            self.scrollable_frame,
-            bg=self.theme['card_color'],
-            relief="solid",
-            borderwidth=1,
-            highlightbackground=self.theme['border_color']
-        )
-        card_frame.pack(fill="x", pady=8, padx=5)
-        
-        content_frame = Frame(card_frame, bg=self.theme['card_color'])
-        content_frame.pack(fill="x", padx=15, pady=12)
-        
-        # Linha superior: Nome e Status
-        top_frame = Frame(content_frame, bg=self.theme['card_color'])
-        top_frame.pack(fill="x", pady=(0, 8))
-        
-        # Nome do jogo
-        name_label = Label(
-            top_frame,
-            text=game['name'],
-            font=("Arial", 16, "bold"),
-            bg=self.theme['card_color'],
-            fg=self.theme['text_color'],
-            anchor="w"
-        )
-        name_label.pack(side="left")
-        
-        # Status
-        if self.mode == 'local':
-            if game_exists:
-                status_text = "✅ Installed"
-                status_color = self.theme['success_color']
-            else:
-                status_text = "❌ Missing"
-                status_color = self.theme['error_color']
-        else:
-            status_text = "🌐 Available Online"
-            status_color = self.theme['highlight_color']
-        
-        status_label = Label(
-            top_frame,
-            text=status_text,
-            font=("Arial", 10, "bold"),
-            bg=self.theme['card_color'],
-            fg=status_color
-        )
-        status_label.pack(side="right")
-        
-        # Descrição
-        desc_label = Label(
-            content_frame,
-            text=game['description'],
-            font=("Arial", 11),
-            bg=self.theme['card_color'],
-            fg=self.theme['text_color'],
-            anchor="w",
-            wraplength=650,
-            justify="left"
-        )
-        desc_label.pack(fill="x", pady=(0, 10))
-        
-        # Linha inferior: Informações e botões
-        bottom_frame = Frame(content_frame, bg=self.theme['card_color'])
-        bottom_frame.pack(fill="x")
-        
-        # Informações
-        info_frame = Frame(bottom_frame, bg=self.theme['card_color'])
-        info_frame.pack(side="left", fill="y")
-        
-        version_label = Label(
-            info_frame,
-            text=f"Version: {game.get('version', '1.0.0')}",
-            font=("Arial", 9),
-            bg=self.theme['card_color'],
-            fg=self.theme['highlight_color']
-        )
-        version_label.pack(anchor="w")
-        
-        # Botões
-        button_frame = Frame(bottom_frame, bg=self.theme['card_color'])
-        button_frame.pack(side="right")
-        
-        if self.mode == 'local':
-            if game_exists:
-                # Botão para jogar
-                play_btn = Button(
-                    button_frame,
-                    text="🎮 Play",
-                    font=("Arial", 10, "bold"),
-                    bg=self.theme['button_bg'],
-                    fg=self.theme['button_fg'],
-                    padx=20,
-                    pady=6,
-                    cursor="hand2",
-                    command=lambda g=game: self.play_game(g)
-                )
-                play_btn.pack(side="left", padx=(5, 0))
-                
-                # Botão para abrir pasta
-                folder_btn = Button(
-                    button_frame,
-                    text="📁 Open Folder",
-                    font=("Arial", 10),
-                    bg=self.theme['secondary_color'],
-                    fg=self.theme['text_color'],
-                    padx=15,
-                    pady=6,
-                    cursor="hand2",
-                    command=lambda g=game: self.open_game_folder(g)
-                )
-                folder_btn.pack(side="left", padx=(5, 0))
-            else:
-                # Botão para ver detalhes
-                details_btn = Button(
-                    button_frame,
-                    text="ℹ️ Details",
-                    font=("Arial", 10),
-                    bg=self.theme['secondary_color'],
-                    fg=self.theme['text_color'],
-                    padx=20,
-                    pady=6,
-                    cursor="hand2",
-                    command=lambda g=game: self.show_game_details(g)
-                )
-                details_btn.pack(side="left")
-        else:
-            # Modo GitHub
-            if game_exists:
-                # Botão para jogar (se já estiver instalado)
-                play_btn = Button(
-                    button_frame,
-                    text="🎮 Play",
-                    font=("Arial", 10, "bold"),
-                    bg=self.theme['button_bg'],
-                    fg=self.theme['button_fg'],
-                    padx=20,
-                    pady=6,
-                    cursor="hand2",
-                    command=lambda g=game: self.play_game(g)
-                )
-                play_btn.pack(side="left", padx=(5, 0))
-            else:
-                # Botão para instalar
-                install_btn = Button(
-                    button_frame,
-                    text="📥 Install",
-                    font=("Arial", 10, "bold"),
-                    bg=self.theme['button_bg'],
-                    fg=self.theme['button_fg'],
-                    padx=20,
-                    pady=6,
-                    cursor="hand2",
-                    command=lambda g=game: self.install_game(g)
-                )
-                install_btn.pack(side="left", padx=(5, 0))
+            self.games_header.configure(text=f"Games ({filtered_count} of {total_count})")
     
-    def create_status_bar(self):
-        """Cria a barra de status"""
-        self.status_bar = Frame(self.root, bg=self.theme['secondary_color'], height=30)
-        self.status_bar.pack(fill="x", side="bottom")
-        self.status_bar.pack_propagate(False)
+    def on_tag_toggle(self, tag: str):
+        """Handle tag selection/deselection"""
+        if tag == 'clear_all':
+            self.current_filters['tags'].clear()
+            # Reset all tag buttons
+            if hasattr(self, 'tag_frame') and hasattr(self.tag_frame, 'tag_buttons'):
+                for btn in self.tag_frame.tag_buttons.values():
+                    btn.configure(fg_color=self.theme_config['input_bg'],
+                                text_color=self.theme_config['text_secondary'])
+        else:
+            if tag in self.current_filters['tags']:
+                self.current_filters['tags'].remove(tag)
+                # Update button color
+                if hasattr(self, 'tag_frame') and hasattr(self.tag_frame, 'tag_buttons') and tag in self.tag_frame.tag_buttons:
+                    self.tag_frame.tag_buttons[tag].configure(
+                        fg_color=self.theme_config['input_bg'],
+                        text_color=self.theme_config['text_secondary']
+                    )
+            else:
+                self.current_filters['tags'].add(tag)
+                # Update button color
+                if hasattr(self, 'tag_frame') and hasattr(self.tag_frame, 'tag_buttons') and tag in self.tag_frame.tag_buttons:
+                    self.tag_frame.tag_buttons[tag].configure(
+                        fg_color=self.theme_config['button_primary'],
+                        text_color=self.theme_config['text_primary']
+                    )
         
-        self.status_label = Label(
-            self.status_bar,
-            text=f"Ready - {len(self.games)} games found | Mode: {self.mode.capitalize()}",
-            font=("Arial", 9),
-            bg=self.theme['secondary_color'],
-            fg=self.theme['text_color']
-        )
-        self.status_label.pack(side="left", padx=10)
-        
-        # Ícone do modo
-        mode_icon = "💻" if self.mode == 'local' else "🌐"
-        mode_label = Label(
-            self.status_bar,
-            text=mode_icon,
-            font=("Arial", 12),
-            bg=self.theme['secondary_color'],
-            fg=self.theme['text_color']
-        )
-        mode_label.pack(side="right", padx=10)
+        self.apply_filters()
     
-    def _on_mousewheel(self, event):
-        """Controla o scroll com mouse wheel"""
-        self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+    def on_installation_filter_change(self, choice):
+        """Handle installation filter change"""
+        # Convert display text to filter key
+        for key, value in FilterManager.INSTALLATION_FILTERS.items():
+            if value == choice:
+                self.current_filters['installation'] = key
+                break
+        self.apply_filters()
+    
+    def change_theme(self, theme_name: str):
+        """Change application theme"""
+        self.current_theme = theme_name
+        self.theme_config = ThemeManager.get_theme(theme_name)
+        
+        tk.set_appearance_mode("light" if theme_name == "light" else "dark")
+        self.configure(fg_color=self.theme_config['bg'])
+        
+        # Refresh display
+        self.apply_filters()
+    
+    def show_theme_menu(self):
+        """Show theme selection menu"""
+        theme_menu = tk.CTkToplevel(self)
+        theme_menu.title("Select Theme")
+        theme_menu.geometry("250x150")
+        theme_menu.transient(self)
+        theme_menu.grab_set()
+        theme_menu.configure(fg_color=self.theme_config['bg'])
+        
+        tk.CTkLabel(theme_menu,
+                   text="Choose Theme:",
+                   font=("RobotoSerif", 14, "bold"),
+                   text_color=self.theme_config['text_primary']).pack(pady=10)
+        
+        for theme_name in ThemeManager.get_theme_names():
+            theme_data = ThemeManager.get_theme(theme_name)
+            btn = tk.CTkButton(theme_menu,
+                             text=theme_data['name'],
+                             fg_color=self.theme_config['button_primary'],
+                             hover_color=self.theme_config['button_primary_hover'],
+                             command=lambda t=theme_name: [self.change_theme(t), theme_menu.destroy()])
+            btn.pack(pady=2, padx=30, fill="x")
     
     def refresh_games(self):
-        """Atualiza a lista de jogos"""
-        self.data = self.load_data()
-        self.games = self.data.get('games', [])
-        self.create_game_cards()
-        self.status_label.config(
-            text=f"Refreshed - {len(self.games)} games found | Mode: {self.mode.capitalize()}"
-        )
+        """Refresh all game data"""
+        self.get_game_data()
+        self.extract_filter_data()
+        self.update_filter_widgets()
+        self.apply_filters()
     
-    def change_theme(self, theme_name):
-        """Muda o tema da aplicação"""
-        self.config['theme'] = theme_name
-        self.save_config()
-        self.theme = self.load_theme(theme_name)
+    def update_filter_widgets(self):
+        """Update filter widgets with current data"""
+        # Update category dropdown
+        categories = ['all'] + sorted(list(self.all_categories))
+        self.category_var.set('all')
+        self.category_dropdown.configure(values=categories)
         
-        # Recriar toda a interface
-        for widget in self.root.winfo_children():
-            widget.destroy()
-        self.setup_ui()
-    
-    def show_about(self):
-        """Mostra janela 'About'"""
-        about_text = """LunaEngine Games Launcher v1.0
-
-A game launcher for LunaEngine games collection.
-
-Features:
-• Play games locally from the games/ folder
-• Download games from GitHub (GitHub mode)
-• Light and dark themes
-• Simple and intuitive interface
-
-GitHub: https://github.com/MrJuaumBR/LunaEngine-Games
-
-Usage:
-  python launcher.py              # Local mode
-  python launcher.py --github     # GitHub mode"""
+        # Update author dropdown
+        authors = ['all'] + sorted(list(self.all_authors))
+        self.author_var.set('all')
+        self.author_dropdown.configure(values=authors)
         
-        messagebox.showinfo("About LunaEngine Games Launcher", about_text)
-    
-    def play_game(self, game):
-        """Executa um jogo"""
-        try:
-            game_path = game.get('full_path') or game.get('path')
-            
-            if not game_path or not os.path.exists(game_path):
-                messagebox.showerror("Error", 
-                                   f"Game file not found:\n{game_path}")
-                return
-            
-            self.status_label.config(text=f"Launching {game['name']}...")
-            
-            # Determinar como executar
-            if game_path.endswith('.py'):
-                # Executar script Python
-                if sys.platform == "win32":
-                    subprocess.Popen(['python', game_path], 
-                                   creationflags=subprocess.CREATE_NEW_CONSOLE)
-                else:
-                    subprocess.Popen(['python3', game_path])
-            else:
-                # Tentar abrir com programa padrão
-                if sys.platform == "win32":
-                    os.startfile(game_path)
-                else:
-                    subprocess.Popen(['xdg-open', game_path])
-            
-            self.status_label.config(text=f"Launched {game['name']}")
-            
-        except Exception as e:
-            self.status_label.config(text=f"Error launching {game['name']}")
-            messagebox.showerror("Launch Error", 
-                               f"Could not launch {game['name']}:\n{str(e)}")
-    
-    def open_game_folder(self, game):
-        """Abre a pasta do jogo"""
-        try:
-            game_folder = Path(game.get('full_path', '')).parent
-            if game_folder.exists():
-                if sys.platform == "win32":
-                    os.startfile(game_folder)
-                elif sys.platform == "darwin":
-                    subprocess.Popen(['open', str(game_folder)])
-                else:
-                    subprocess.Popen(['xdg-open', str(game_folder)])
-            else:
-                messagebox.showerror("Error", "Game folder not found")
-        except Exception as e:
-            messagebox.showerror("Error", f"Could not open folder:\n{str(e)}")
-    
-    def open_games_folder(self):
-        """Abre a pasta games/"""
-        try:
-            if self.games_dir.exists():
-                if sys.platform == "win32":
-                    os.startfile(self.games_dir)
-                elif sys.platform == "darwin":
-                    subprocess.Popen(['open', str(self.games_dir)])
-                else:
-                    subprocess.Popen(['xdg-open', str(self.games_dir)])
-            else:
-                messagebox.showwarning("Warning", 
-                    f"Games folder not found at:\n{self.games_dir}\n"
-                    "Creating empty folder...")
-                self.games_dir.mkdir(parents=True)
-                if sys.platform == "win32":
-                    os.startfile(self.games_dir)
-        except Exception as e:
-            messagebox.showerror("Error", f"Could not open games folder:\n{str(e)}")
-    
-    def show_game_details(self, game):
-        """Mostra detalhes do jogo"""
-        details = f"""Game: {game['name']}
-Version: {game.get('version', '1.0.0')}
-Description: {game['description']}
-Path: {game.get('path', 'Unknown')}
-Requirements: {', '.join(game.get('requirements', [])) or 'None'}
-
-Status: {'Available' if os.path.exists(game.get('full_path', '')) else 'Not installed'}"""
+        # Update sort dropdown
+        self.sort_var.set(FilterManager.SORT_OPTIONS['name'])
         
-        messagebox.showinfo(f"Game Details - {game['name']}", details)
-    
-    def install_game(self, game):
-        """Instala um jogo do GitHub (modo GitHub)"""
-        if self.mode != 'github':
-            return
+        # Update installation filter
+        self.installation_var.set(FilterManager.INSTALLATION_FILTERS['all'])
         
-        messagebox.showinfo("Coming Soon", 
-            "GitHub download feature coming soon!\n\n"
-            "For now, please:\n"
-            "1. Switch to local mode\n"
-            "2. Place game folders in the 'games' directory\n"
-            "3. Run in local mode")
+        # Remove old tag frame if exists
+        if hasattr(self, 'tag_frame'):
+            try:
+                self.tag_frame.destroy()
+            except:
+                pass
+        
+        # Create tag widgets only if we have tags
+        if self.all_tags:
+            self.tag_frame = TagManager.create_tag_widgets(
+                self.sidebar,
+                self.all_tags,
+                self.current_filters['tags'],
+                self.theme_config,
+                self.on_tag_toggle,
+                max_height=180
+            )
+            
+            # Insert tag frame before sort dropdown
+            self.tag_frame.pack(fill="x", padx=15, pady=(0, 15), before=self.sort_dropdown)
+        else:
+            # Create placeholder for tags
+            self.tag_frame = tk.CTkFrame(self.sidebar, fg_color="transparent")
+            self.tag_frame.pack(fill="x", padx=15, pady=(0, 15), before=self.sort_dropdown)
+            tk.CTkLabel(self.tag_frame,
+                       text="Tags:",
+                       font=("RobotoMono", 11),
+                       text_color=self.theme_config['text_secondary']).pack(anchor="w", pady=(0, 8))
+            tk.CTkLabel(self.tag_frame,
+                       text="No tags available",
+                       font=("RobotoMono", 10),
+                       text_color=self.theme_config['text_secondary']).pack(anchor="w")
     
-    def switch_to_local_mode(self):
-        """Muda para o modo local"""
-        self.config['last_mode'] = 'local'
-        self.save_config()
-        messagebox.showinfo("Switch Mode", 
-            "Switching to Local Mode.\n\n"
-            "Please restart the launcher.")
-        self.root.quit()
+    def create_menu(self):
+        """Create the main interface"""
+        # Main container
+        self.main_container = tk.CTkFrame(self, fg_color=self.theme_config['bg'])
+        self.main_container.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Configure grid
+        self.main_container.grid_columnconfigure(1, weight=1)
+        self.main_container.grid_rowconfigure(0, weight=1)
+        
+        # Sidebar (Filters)
+        self.sidebar = tk.CTkFrame(self.main_container,
+                                 width=320,
+                                 corner_radius=10,
+                                 fg_color=self.theme_config['sidebar'],
+                                 border_width=1,
+                                 border_color=self.theme_config['sidebar_border'])
+        self.sidebar.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
+        self.sidebar.grid_propagate(False)
+        
+        # Title
+        tk.CTkLabel(self.sidebar,
+                   text="FILTERS & SORT",
+                   font=("RobotoMono", 18, "bold"),
+                   text_color=self.theme_config['text_primary']).pack(pady=(20, 15), padx=20)
+        
+        # Search
+        tk.CTkLabel(self.sidebar,
+                   text="Search:",
+                   font=("RobotoMono", 11),
+                   text_color=self.theme_config['text_secondary']).pack(anchor="w", padx=20, pady=(0, 5))
+        
+        self.search_var = tk.StringVar()
+        self.search_var.trace('w', lambda *args: self.current_filters.update({'search': self.search_var.get()}) or self.apply_filters())
+        search_entry = tk.CTkEntry(self.sidebar,
+                   textvariable=self.search_var,
+                   placeholder_text="Search games...",
+                   fg_color=self.theme_config['input_bg'],
+                   border_color=self.theme_config['input_border'],
+                   height=35)
+        search_entry.pack(fill="x", padx=20, pady=(0, 15))
+        
+        # Installation filter
+        tk.CTkLabel(self.sidebar,
+                   text="Installation:",
+                   font=("RobotoMono", 11),
+                   text_color=self.theme_config['text_secondary']).pack(anchor="w", padx=20, pady=(0, 5))
+        
+        self.installation_var = tk.StringVar(value=FilterManager.INSTALLATION_FILTERS['all'])
+        self.installation_dropdown = tk.CTkOptionMenu(self.sidebar,
+                                                     variable=self.installation_var,
+                                                     values=list(FilterManager.INSTALLATION_FILTERS.values()),
+                                                     command=self.on_installation_filter_change,
+                                                     fg_color=self.theme_config['input_bg'],
+                                                     button_color=self.theme_config['button_secondary'],
+                                                     button_hover_color=self.theme_config['button_secondary_hover'],
+                                                     height=35)
+        self.installation_dropdown.pack(fill="x", padx=20, pady=(0, 15))
+        
+        # Category filter
+        tk.CTkLabel(self.sidebar,
+                   text="Category:",
+                   font=("RobotoMono", 11),
+                   text_color=self.theme_config['text_secondary']).pack(anchor="w", padx=20, pady=(0, 5))
+        
+        self.category_var = tk.StringVar(value="all")
+        self.category_dropdown = tk.CTkOptionMenu(self.sidebar,
+                                                 variable=self.category_var,
+                                                 values=['all'],  # Will be updated later
+                                                 command=lambda c: self.current_filters.update({'category': c}) or self.apply_filters(),
+                                                 fg_color=self.theme_config['input_bg'],
+                                                 button_color=self.theme_config['button_secondary'],
+                                                 button_hover_color=self.theme_config['button_secondary_hover'],
+                                                 height=35)
+        self.category_dropdown.pack(fill="x", padx=20, pady=(0, 15))
+        
+        # Author filter
+        tk.CTkLabel(self.sidebar,
+                   text="Author:",
+                   font=("RobotoMono", 11),
+                   text_color=self.theme_config['text_secondary']).pack(anchor="w", padx=20, pady=(0, 5))
+        
+        self.author_var = tk.StringVar(value="all")
+        self.author_dropdown = tk.CTkOptionMenu(self.sidebar,
+                                               variable=self.author_var,
+                                               values=['all'],  # Will be updated later
+                                               command=lambda a: self.current_filters.update({'author': a}) or self.apply_filters(),
+                                               fg_color=self.theme_config['input_bg'],
+                                               button_color=self.theme_config['button_secondary'],
+                                               button_hover_color=self.theme_config['button_secondary_hover'],
+                                               height=35)
+        self.author_dropdown.pack(fill="x", padx=20, pady=(0, 15))
+        
+        # Sort by
+        tk.CTkLabel(self.sidebar,
+                   text="Sort by:",
+                   font=("RobotoMono", 11),
+                   text_color=self.theme_config['text_secondary']).pack(anchor="w", padx=20, pady=(0, 5))
+        
+        self.sort_var = tk.StringVar(value=FilterManager.SORT_OPTIONS['name'])
+        self.sort_dropdown = tk.CTkOptionMenu(self.sidebar,
+                                             variable=self.sort_var,
+                                             values=list(FilterManager.SORT_OPTIONS.values()),
+                                             command=lambda s: self.current_filters.update({'sort_by': 
+                                                                                          [k for k, v in FilterManager.SORT_OPTIONS.items() if v == s][0]}) or self.apply_filters(),
+                                             fg_color=self.theme_config['input_bg'],
+                                             button_color=self.theme_config['button_secondary'],
+                                             button_hover_color=self.theme_config['button_secondary_hover'],
+                                             height=35)
+        self.sort_dropdown.pack(fill="x", padx=20, pady=(0, 20))
+        
+        # Action buttons
+        action_frame = tk.CTkFrame(self.sidebar, fg_color="transparent")
+        action_frame.pack(side="bottom", fill="x", padx=20, pady=20)
+        
+        # Clear filters
+        tk.CTkButton(action_frame,
+                    text="Clear Filters",
+                    fg_color=self.theme_config['button_secondary'],
+                    hover_color=self.theme_config['button_secondary_hover'],
+                    command=self.clear_filters,
+                    height=35).pack(fill="x", pady=(0, 10))
+        
+        # Change theme
+        tk.CTkButton(action_frame,
+                    text="Change Theme",
+                    fg_color=self.theme_config['button_primary'],
+                    hover_color=self.theme_config['button_primary_hover'],
+                    command=self.show_theme_menu,
+                    height=35).pack(fill="x", pady=(0, 10))
+        
+        # Refresh button
+        tk.CTkButton(action_frame,
+                    text="Refresh All",
+                    fg_color=self.theme_config['info'],
+                    hover_color=self.theme_config['button_secondary_hover'],
+                    command=self.refresh_games,
+                    height=35).pack(fill="x", pady=(0, 10))
+        
+        # Mode indicator
+        mode_color = self.theme_config['success'] if run_mode == "--local" else self.theme_config['info']
+        mode_text = "LOCAL MODE" if run_mode == "--local" else "REMOTE MODE"
+        tk.CTkLabel(action_frame,
+                   text=mode_text,
+                   font=("RobotoMono", 10, "bold"),
+                   text_color=mode_color).pack(pady=(10, 0))
+        
+        # Main content area
+        self.content_frame = tk.CTkFrame(self.main_container, fg_color=self.theme_config['bg'])
+        self.content_frame.grid(row=0, column=1, sticky="nsew")
+        
+        # Header
+        header_frame = tk.CTkFrame(self.content_frame, fg_color="transparent", height=60)
+        header_frame.pack(fill="x", pady=(0, 15))
+        header_frame.pack_propagate(False)
+        
+        self.games_header = tk.CTkLabel(header_frame,
+                                       text="Loading...",
+                                       font=("RobotoSerif", 24, "bold"),
+                                       text_color=self.theme_config['text_primary'])
+        self.games_header.pack(side="left", padx=20)
+        
+        # Stats placeholder
+        self.stats_label = tk.CTkLabel(header_frame,
+                                      text="",
+                                      font=("RobotoMono", 11),
+                                      text_color=self.theme_config['text_secondary'])
+        self.stats_label.pack(side="right", padx=20)
+        
+        # Games container
+        self.games_container = tk.CTkScrollableFrame(self.content_frame,
+                                                    fg_color=self.theme_config['bg'],
+                                                    scrollbar_button_color=self.theme_config['scrollbar'])
+        self.games_container.pack(fill="both", expand=True)
+        
+        # Show loading message
+        self.loading_label = tk.CTkLabel(self.games_container,
+                                        text="Loading games...",
+                                        font=("RobotoSerif", 16),
+                                        text_color=self.theme_config['text_secondary'])
+        self.loading_label.pack(pady=100)
     
-    def switch_to_github_mode(self):
-        """Muda para o modo GitHub"""
-        self.config['last_mode'] = 'github'
-        self.save_config()
-        messagebox.showinfo("Switch Mode", 
-            "Switching to GitHub Mode.\n\n"
-            "Please restart the launcher.")
-        self.root.quit()
-    
-    def update_games_status(self):
-        """Atualiza o status dos jogos"""
-        # Esta função é chamada após criar a interface
-        pass
+    def clear_filters(self):
+        """Clear all filters"""
+        self.search_var.set('')
+        self.category_var.set('all')
+        self.author_var.set('all')
+        self.installation_var.set(FilterManager.INSTALLATION_FILTERS['all'])
+        self.sort_var.set(FilterManager.SORT_OPTIONS['name'])
+        
+        self.current_filters = {
+            'category': 'all',
+            'tags': set(),
+            'author': 'all',
+            'sort_by': 'name',
+            'search': '',
+            'installation': 'all'
+        }
+        
+        # Reset tag buttons if they exist
+        if hasattr(self, 'tag_frame') and hasattr(self.tag_frame, 'tag_buttons'):
+            for btn in self.tag_frame.tag_buttons.values():
+                btn.configure(fg_color=self.theme_config['input_bg'],
+                            text_color=self.theme_config['text_secondary'])
+        
+        self.apply_filters()
 
-
-def main():
-    """Função principal"""
-    parser = argparse.ArgumentParser(description='LunaEngine Games Launcher')
-    parser.add_argument('--github', action='store_true', 
-                       help='Run in GitHub mode (download from GitHub)')
-    parser.add_argument('--local', action='store_true', 
-                       help='Run in local mode (use local games folder)')
-    
-    args = parser.parse_args()
-    
-    # Determinar modo
-    if args.github:
-        mode = 'github'
-    elif args.local:
-        mode = 'local'
-    else:
-        # Modo padrão: local
-        mode = 'local'
-    
-    # Criar e executar aplicação
-    root = Tk()
-    app = GameLauncher(root, mode)
-    root.mainloop()
-
-
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    app = App()
+    app.mainloop()
