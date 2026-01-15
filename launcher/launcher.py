@@ -1,23 +1,35 @@
+#!/usr/bin/env python3
+"""
+Game Launcher for LunaEngine Games
+Supports both GitHub and local modes
+"""
+
 import json
 import os
-import subprocess
 import sys
-import requests
-import zipfile
-import shutil
-import threading
+import subprocess
+import argparse
+import webbrowser
 from pathlib import Path
 from tkinter import *
 from tkinter import ttk, messagebox, font
-from PIL import Image, ImageTk
-import webbrowser
+import requests
+
+# Adicionar o diretório atual ao path para imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 class GameLauncher:
-    def __init__(self, root):
+    def __init__(self, root, mode='local'):
         self.root = root
-        self.root.title("Game Launcher")
+        self.mode = mode  # 'github' ou 'local'
+        self.root.title(f"LunaEngine Games Launcher [{mode.capitalize()} Mode]")
         self.root.geometry("900x700")
         self.root.minsize(800, 600)
+        
+        # Determinar caminhos base
+        self.base_dir = Path(__file__).parent.parent  # Pasta LunaEngine-Games
+        self.launcher_dir = Path(__file__).parent      # Pasta Launcher
+        self.games_dir = self.base_dir / "games"       # Pasta games
         
         # Carregar configurações
         self.config = self.load_config()
@@ -26,11 +38,11 @@ class GameLauncher:
         # Carregar dados dos jogos
         self.data = self.load_data()
         self.games = self.data.get('games', [])
-        self.github_base = self.data.get('github_base_url', '')
         
-        # Variáveis de estado
-        self.downloading = False
-        self.download_queue = []
+        # URLs do GitHub
+        if self.mode == 'github':
+            self.github_raw_url = "https://github.com/MrJuaumBR/LunaEngine-Games/raw/main"
+            self.github_api_url = "https://api.github.com/repos/MrJuaumBR/LunaEngine-Games/contents"
         
         # Setup da interface
         self.setup_ui()
@@ -38,39 +50,57 @@ class GameLauncher:
         # Verificar jogos instalados
         self.update_games_status()
         
+        # Centralizar janela
+        self.center_window()
+    
+    def center_window(self):
+        """Centraliza a janela na tela"""
+        self.root.update_idletasks()
+        width = self.root.winfo_width()
+        height = self.root.winfo_height()
+        x = (self.root.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.root.winfo_screenheight() // 2) - (height // 2)
+        self.root.geometry(f'{width}x{height}+{x}+{y}')
+    
     def load_config(self):
         """Carrega as configurações do usuário"""
+        config_path = self.launcher_dir / "config.json"
         default_config = {
             "theme": "dark",
             "language": "en",
-            "download_path": "games",
-            "check_updates_on_start": True,
-            "github_token": ""
+            "auto_update": False,
+            "last_mode": "local"
         }
         
         try:
-            with open('config.json', 'r') as f:
-                config = json.load(f)
-                # Garantir que todas as chaves existam
-                for key in default_config:
-                    if key not in config:
-                        config[key] = default_config[key]
-                return config
-        except FileNotFoundError:
-            # Criar arquivo de configuração padrão
-            with open('config.json', 'w') as f:
-                json.dump(default_config, f, indent=2)
-            return default_config
+            if config_path.exists():
+                with open(config_path, 'r') as f:
+                    config = json.load(f)
+                    # Garantir que todas as chaves existam
+                    for key in default_config:
+                        if key not in config:
+                            config[key] = default_config[key]
+                    return config
+        except Exception as e:
+            print(f"Error loading config: {e}")
+        
+        # Criar configuração padrão
+        with open(config_path, 'w') as f:
+            json.dump(default_config, f, indent=2)
+        return default_config
     
     def save_config(self):
         """Salva as configurações do usuário"""
-        with open('config.json', 'w') as f:
+        config_path = self.launcher_dir / "config.json"
+        with open(config_path, 'w') as f:
             json.dump(self.config, f, indent=2)
     
     def load_theme(self, theme_name):
         """Carrega o tema selecionado"""
-        theme_file = f"assets/{theme_name}_theme.json"
-        default_theme = {
+        theme_file = self.launcher_dir / "assets" / f"{theme_name}_theme.json"
+        
+        # Tema escuro padrão
+        default_dark_theme = {
             "name": "dark",
             "bg_color": "#1a1a2e",
             "card_color": "#16213e",
@@ -81,27 +111,131 @@ class GameLauncher:
             "secondary_color": "#2d4059",
             "highlight_color": "#00adb5",
             "error_color": "#ff6b6b",
-            "success_color": "#4CAF50"
+            "success_color": "#4CAF50",
+            "warning_color": "#ffa726",
+            "border_color": "#30475e"
+        }
+        
+        # Tema claro
+        default_light_theme = {
+            "name": "light",
+            "bg_color": "#f5f7fa",
+            "card_color": "#ffffff",
+            "text_color": "#2d4059",
+            "accent_color": "#3498db",
+            "button_bg": "#3498db",
+            "button_fg": "white",
+            "secondary_color": "#ecf0f1",
+            "highlight_color": "#e74c3c",
+            "error_color": "#e74c3c",
+            "success_color": "#2ecc71",
+            "warning_color": "#f39c12",
+            "border_color": "#bdc3c7"
         }
         
         try:
-            with open(theme_file, 'r') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            return default_theme
+            if theme_file.exists():
+                with open(theme_file, 'r') as f:
+                    return json.load(f)
+        except:
+            pass
+        
+        # Retornar tema padrão baseado no nome
+        if theme_name == "light":
+            return default_light_theme
+        return default_dark_theme
     
     def load_data(self):
-        """Carrega os dados dos jogos"""
-        try:
-            with open('./data.json', 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            messagebox.showerror("Error", "data.json file not found!")
+        """Carrega os dados dos jogos baseado no modo"""
+        if self.mode == 'local':
+            # Modo local: carregar do arquivo data.json na pasta games
+            data_path = self.games_dir / "data.json"
+            if data_path.exists():
+                try:
+                    with open(data_path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                        # Corrigir paths para serem absolutos
+                        for game in data.get('games', []):
+                            if 'path' in game:
+                                # Converter path relativo para absoluto
+                                game['full_path'] = str(self.games_dir / game['path'])
+                        return data
+                except Exception as e:
+                    messagebox.showerror("Error", f"Failed to load data.json: {e}")
+            else:
+                messagebox.showwarning("Warning", 
+                    f"data.json not found in {self.games_dir}\n"
+                    "Running in local mode with auto-detected games.")
+                return self.scan_local_games()
+        else:
+            # Modo GitHub: tentar baixar data.json
+            try:
+                response = requests.get(f"{self.github_raw_url}/games/data.json", timeout=10)
+                if response.status_code == 200:
+                    data = response.json()
+                    # Adicionar URLs para download
+                    for game in data.get('games', []):
+                        game['download_url'] = f"{self.github_raw_url}/games/{game['path'].replace('main.py', '')}"
+                    return data
+                else:
+                    messagebox.showerror("Error", 
+                        f"Failed to fetch data from GitHub\nStatus: {response.status_code}")
+            except Exception as e:
+                messagebox.showerror("Error", f"Network error: {e}")
+        
+        return {"games": []}
+    
+    def scan_local_games(self):
+        """Escaneia a pasta local de jogos"""
+        games = []
+        
+        if not self.games_dir.exists():
+            self.games_dir.mkdir(parents=True)
             return {"games": []}
+        
+        # Procurar por pastas de jogos
+        for item in self.games_dir.iterdir():
+            if item.is_dir():
+                # Ignorar pastas que não são jogos
+                if item.name.startswith('.') or item.name == '__pycache__':
+                    continue
+                
+                # Procurar por main.py
+                main_file = item / "main.py"
+                if not main_file.exists():
+                    # Procurar por qualquer arquivo .py
+                    py_files = list(item.glob("*.py"))
+                    if py_files:
+                        main_file = py_files[0]
+                    else:
+                        continue
+                
+                # Criar entrada do jogo
+                game_data = {
+                    "name": item.name.replace('_', ' ').title(),
+                    "path": f"{item.name}/{main_file.name}",
+                    "full_path": str(main_file),
+                    "version": "1.0.0",
+                    "description": f"A game located in {item.name} folder",
+                    "icon": "",
+                    "requirements": []
+                }
+                
+                # Verificar se existe requirements.txt
+                req_file = item / "requirements.txt"
+                if req_file.exists():
+                    try:
+                        with open(req_file, 'r') as f:
+                            game_data["requirements"] = [line.strip() for line in f if line.strip()]
+                    except:
+                        pass
+                
+                games.append(game_data)
+        
+        return {"games": games}
     
     def setup_ui(self):
         """Configura a interface do usuário"""
-        # Configurar cores
         self.root.configure(bg=self.theme['bg_color'])
         
         # Criar menu
@@ -118,31 +252,48 @@ class GameLauncher:
     
     def create_menu(self):
         """Cria a barra de menu"""
-        menubar = Menu(self.root)
+        menubar = Menu(self.root, bg=self.theme['secondary_color'], fg=self.theme['text_color'])
         self.root.config(menu=menubar)
         
         # File menu
-        file_menu = Menu(menubar, tearoff=0)
+        file_menu = Menu(menubar, tearoff=0, bg=self.theme['card_color'], fg=self.theme['text_color'])
         menubar.add_cascade(label="File", menu=file_menu)
-        file_menu.add_command(label="Refresh", command=self.refresh_games)
+        file_menu.add_command(label="Refresh Games", command=self.refresh_games)
+        
+        if self.mode == 'github':
+            file_menu.add_command(label="Switch to Local Mode", 
+                                command=self.switch_to_local_mode)
+        else:
+            file_menu.add_command(label="Switch to GitHub Mode", 
+                                command=self.switch_to_github_mode)
+        
+        file_menu.add_separator()
+        file_menu.add_command(label="Open Games Folder", command=self.open_games_folder)
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.root.quit)
         
         # Settings menu
-        settings_menu = Menu(menubar, tearoff=0)
+        settings_menu = Menu(menubar, tearoff=0, bg=self.theme['card_color'], fg=self.theme['text_color'])
         menubar.add_cascade(label="Settings", menu=settings_menu)
         
         # Theme submenu
-        theme_menu = Menu(settings_menu, tearoff=0)
+        theme_menu = Menu(settings_menu, tearoff=0, bg=self.theme['card_color'], fg=self.theme['text_color'])
         settings_menu.add_cascade(label="Theme", menu=theme_menu)
-        theme_menu.add_radiobutton(label="Dark", command=lambda: self.change_theme('dark'))
-        theme_menu.add_radiobutton(label="Light", command=lambda: self.change_theme('light'))
+        theme_menu.add_radiobutton(label="Dark Theme", 
+                                  command=lambda: self.change_theme('dark'),
+                                  variable=StringVar(value=self.config['theme']),
+                                  value='dark')
+        theme_menu.add_radiobutton(label="Light Theme", 
+                                  command=lambda: self.change_theme('light'),
+                                  variable=StringVar(value=self.config['theme']),
+                                  value='light')
         
         # Help menu
-        help_menu = Menu(menubar, tearoff=0)
+        help_menu = Menu(menubar, tearoff=0, bg=self.theme['card_color'], fg=self.theme['text_color'])
         menubar.add_cascade(label="Help", menu=help_menu)
         help_menu.add_command(label="About", command=self.show_about)
-        help_menu.add_command(label="GitHub Repository", command=lambda: webbrowser.open("https://github.com"))
+        help_menu.add_command(label="View on GitHub", 
+                            command=lambda: webbrowser.open("https://github.com/MrJuaumBR/LunaEngine-Games"))
     
     def create_header(self):
         """Cria o cabeçalho"""
@@ -150,19 +301,29 @@ class GameLauncher:
         header_frame.pack(fill="x", pady=(0, 10))
         header_frame.pack_propagate(False)
         
+        # Título com ícone do modo
+        mode_icon = "💻" if self.mode == 'local' else "🌐"
+        title_text = f"{mode_icon} LunaEngine Games Launcher"
+        
         title = Label(
             header_frame,
-            text="🎮 Game Library",
-            font=("Arial", 28, "bold"),
+            text=title_text,
+            font=("Arial", 24, "bold"),
             bg=self.theme['accent_color'],
             fg=self.theme['text_color']
         )
-        title.pack(expand=True)
+        title.pack(expand=True, pady=(20, 5))
+        
+        # Subtítulo
+        if self.mode == 'local':
+            subtitle_text = "Playing games from local folder"
+        else:
+            subtitle_text = "Downloading and playing games from GitHub"
         
         subtitle = Label(
             header_frame,
-            text="Browse and play your favorite games",
-            font=("Arial", 12),
+            text=subtitle_text,
+            font=("Arial", 11),
             bg=self.theme['accent_color'],
             fg=self.theme['text_color']
         )
@@ -173,13 +334,12 @@ class GameLauncher:
         main_container = Frame(self.root, bg=self.theme['bg_color'])
         main_container.pack(fill="both", expand=True, padx=20, pady=10)
         
-        # Frame para os cards dos jogos
-        self.games_frame = Frame(main_container, bg=self.theme['bg_color'])
-        self.games_frame.pack(fill="both", expand=True)
-        
         # Container com scrollbar
-        self.canvas = Canvas(self.games_frame, bg=self.theme['bg_color'], highlightthickness=0)
-        scrollbar = ttk.Scrollbar(self.games_frame, orient="vertical", command=self.canvas.yview)
+        canvas_frame = Frame(main_container, bg=self.theme['bg_color'])
+        canvas_frame.pack(fill="both", expand=True)
+        
+        self.canvas = Canvas(canvas_frame, bg=self.theme['bg_color'], highlightthickness=0)
+        scrollbar = ttk.Scrollbar(canvas_frame, orient="vertical", command=self.canvas.yview)
         
         self.scrollable_frame = Frame(self.canvas, bg=self.theme['bg_color'])
         
@@ -191,8 +351,7 @@ class GameLauncher:
         self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
         self.canvas.configure(yscrollcommand=scrollbar.set)
         
-        # Posicionar
-        self.canvas.pack(side="left", fill="both", expand=True, padx=(0, 5))
+        self.canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
         
         # Bind mouse wheel
@@ -207,131 +366,194 @@ class GameLauncher:
         for widget in self.scrollable_frame.winfo_children():
             widget.destroy()
         
-        self.game_cards = []
+        if not self.games:
+            # Mostrar mensagem quando não há jogos
+            no_games_frame = Frame(self.scrollable_frame, bg=self.theme['bg_color'])
+            no_games_frame.pack(fill="both", expand=True, pady=100)
+            
+            if self.mode == 'local':
+                message = "No games found.\n\nPlace game folders in the 'games' directory."
+            else:
+                message = "No games available.\n\nCheck your internet connection or try local mode."
+            
+            no_games_label = Label(
+                no_games_frame,
+                text=message,
+                font=("Arial", 14),
+                bg=self.theme['bg_color'],
+                fg=self.theme['text_color'],
+                justify="center"
+            )
+            no_games_label.pack(expand=True)
+            return
         
+        # Criar cards para cada jogo
         for game in self.games:
-            card = self.create_game_card(game)
-            self.game_cards.append(card)
+            self.create_game_card(game)
     
     def create_game_card(self, game):
         """Cria um card individual para o jogo"""
+        # Verificar se o jogo existe
+        if self.mode == 'local':
+            game_exists = os.path.exists(game.get('full_path', ''))
+        else:
+            game_exists = False  # No GitHub mode, games need to be downloaded first
+        
         card_frame = Frame(
             self.scrollable_frame,
             bg=self.theme['card_color'],
-            relief="ridge",
-            borderwidth=1
+            relief="solid",
+            borderwidth=1,
+            highlightbackground=self.theme['border_color']
         )
-        card_frame.pack(fill="x", pady=10, padx=5)
+        card_frame.pack(fill="x", pady=8, padx=5)
         
-        # Conteúdo do card
         content_frame = Frame(card_frame, bg=self.theme['card_color'])
-        content_frame.pack(fill="x", padx=15, pady=15)
+        content_frame.pack(fill="x", padx=15, pady=12)
         
-        # Ícone e informações básicas
-        info_frame = Frame(content_frame, bg=self.theme['card_color'])
-        info_frame.pack(fill="x", pady=(0, 10))
+        # Linha superior: Nome e Status
+        top_frame = Frame(content_frame, bg=self.theme['card_color'])
+        top_frame.pack(fill="x", pady=(0, 8))
         
-        # Status (instalado/não instalado)
-        status = "✅ Installed" if os.path.exists(game['path']) else "❌ Not Installed"
-        
-        # Título e status
-        title_frame = Frame(info_frame, bg=self.theme['card_color'])
-        title_frame.pack(fill="x")
-        
-        title = Label(
-            title_frame,
+        # Nome do jogo
+        name_label = Label(
+            top_frame,
             text=game['name'],
-            font=("Arial", 18, "bold"),
+            font=("Arial", 16, "bold"),
             bg=self.theme['card_color'],
             fg=self.theme['text_color'],
             anchor="w"
         )
-        title.pack(side="left")
+        name_label.pack(side="left")
+        
+        # Status
+        if self.mode == 'local':
+            if game_exists:
+                status_text = "✅ Installed"
+                status_color = self.theme['success_color']
+            else:
+                status_text = "❌ Missing"
+                status_color = self.theme['error_color']
+        else:
+            status_text = "🌐 Available Online"
+            status_color = self.theme['highlight_color']
         
         status_label = Label(
-            title_frame,
-            text=status,
-            font=("Arial", 10),
+            top_frame,
+            text=status_text,
+            font=("Arial", 10, "bold"),
             bg=self.theme['card_color'],
-            fg=self.theme['success_color'] if "Installed" in status else self.theme['error_color'],
-            anchor="w"
+            fg=status_color
         )
         status_label.pack(side="right")
         
         # Descrição
-        desc = Label(
-            info_frame,
+        desc_label = Label(
+            content_frame,
             text=game['description'],
             font=("Arial", 11),
             bg=self.theme['card_color'],
             fg=self.theme['text_color'],
             anchor="w",
-            wraplength=700,
+            wraplength=650,
             justify="left"
         )
-        desc.pack(fill="x", pady=(5, 10))
+        desc_label.pack(fill="x", pady=(0, 10))
         
-        # Informações adicionais
-        meta_frame = Frame(info_frame, bg=self.theme['card_color'])
-        meta_frame.pack(fill="x")
+        # Linha inferior: Informações e botões
+        bottom_frame = Frame(content_frame, bg=self.theme['card_color'])
+        bottom_frame.pack(fill="x")
         
-        version = Label(
-            meta_frame,
-            text=f"Version: {game['version']}",
+        # Informações
+        info_frame = Frame(bottom_frame, bg=self.theme['card_color'])
+        info_frame.pack(side="left", fill="y")
+        
+        version_label = Label(
+            info_frame,
+            text=f"Version: {game.get('version', '1.0.0')}",
             font=("Arial", 9),
             bg=self.theme['card_color'],
             fg=self.theme['highlight_color']
         )
-        version.pack(side="left", padx=(0, 15))
+        version_label.pack(anchor="w")
         
-        # Botões de ação
-        button_frame = Frame(content_frame, bg=self.theme['card_color'])
-        button_frame.pack(fill="x")
+        # Botões
+        button_frame = Frame(bottom_frame, bg=self.theme['card_color'])
+        button_frame.pack(side="right")
         
-        if os.path.exists(game['path']):
-            # Jogo instalado - botão Play
-            play_btn = Button(
-                button_frame,
-                text="🎮 Play",
-                font=("Arial", 10, "bold"),
-                bg=self.theme['button_bg'],
-                fg=self.theme['button_fg'],
-                padx=20,
-                pady=8,
-                cursor="hand2",
-                command=lambda g=game: self.play_game(g)
-            )
-            play_btn.pack(side="left", padx=(0, 10))
-            
-            # Botão para reinstalar/atualizar
-            reinstall_btn = Button(
-                button_frame,
-                text="🔄 Reinstall",
-                font=("Arial", 10),
-                bg=self.theme['secondary_color'],
-                fg=self.theme['text_color'],
-                padx=15,
-                pady=8,
-                cursor="hand2",
-                command=lambda g=game: self.install_game(g, force=True)
-            )
-            reinstall_btn.pack(side="left")
+        if self.mode == 'local':
+            if game_exists:
+                # Botão para jogar
+                play_btn = Button(
+                    button_frame,
+                    text="🎮 Play",
+                    font=("Arial", 10, "bold"),
+                    bg=self.theme['button_bg'],
+                    fg=self.theme['button_fg'],
+                    padx=20,
+                    pady=6,
+                    cursor="hand2",
+                    command=lambda g=game: self.play_game(g)
+                )
+                play_btn.pack(side="left", padx=(5, 0))
+                
+                # Botão para abrir pasta
+                folder_btn = Button(
+                    button_frame,
+                    text="📁 Open Folder",
+                    font=("Arial", 10),
+                    bg=self.theme['secondary_color'],
+                    fg=self.theme['text_color'],
+                    padx=15,
+                    pady=6,
+                    cursor="hand2",
+                    command=lambda g=game: self.open_game_folder(g)
+                )
+                folder_btn.pack(side="left", padx=(5, 0))
+            else:
+                # Botão para ver detalhes
+                details_btn = Button(
+                    button_frame,
+                    text="ℹ️ Details",
+                    font=("Arial", 10),
+                    bg=self.theme['secondary_color'],
+                    fg=self.theme['text_color'],
+                    padx=20,
+                    pady=6,
+                    cursor="hand2",
+                    command=lambda g=game: self.show_game_details(g)
+                )
+                details_btn.pack(side="left")
         else:
-            # Jogo não instalado - botão Install
-            install_btn = Button(
-                button_frame,
-                text="📥 Install",
-                font=("Arial", 10, "bold"),
-                bg=self.theme['button_bg'],
-                fg=self.theme['button_fg'],
-                padx=20,
-                pady=8,
-                cursor="hand2",
-                command=lambda g=game: self.install_game(g)
-            )
-            install_btn.pack(side="left")
-        
-        return card_frame
+            # Modo GitHub
+            if game_exists:
+                # Botão para jogar (se já estiver instalado)
+                play_btn = Button(
+                    button_frame,
+                    text="🎮 Play",
+                    font=("Arial", 10, "bold"),
+                    bg=self.theme['button_bg'],
+                    fg=self.theme['button_fg'],
+                    padx=20,
+                    pady=6,
+                    cursor="hand2",
+                    command=lambda g=game: self.play_game(g)
+                )
+                play_btn.pack(side="left", padx=(5, 0))
+            else:
+                # Botão para instalar
+                install_btn = Button(
+                    button_frame,
+                    text="📥 Install",
+                    font=("Arial", 10, "bold"),
+                    bg=self.theme['button_bg'],
+                    fg=self.theme['button_fg'],
+                    padx=20,
+                    pady=6,
+                    cursor="hand2",
+                    command=lambda g=game: self.install_game(g)
+                )
+                install_btn.pack(side="left", padx=(5, 0))
     
     def create_status_bar(self):
         """Cria a barra de status"""
@@ -341,44 +563,36 @@ class GameLauncher:
         
         self.status_label = Label(
             self.status_bar,
-            text="Ready",
+            text=f"Ready - {len(self.games)} games found | Mode: {self.mode.capitalize()}",
             font=("Arial", 9),
             bg=self.theme['secondary_color'],
             fg=self.theme['text_color']
         )
         self.status_label.pack(side="left", padx=10)
         
-        # Progress bar para downloads
-        self.progress_var = DoubleVar()
-        self.progress_bar = ttk.Progressbar(
+        # Ícone do modo
+        mode_icon = "💻" if self.mode == 'local' else "🌐"
+        mode_label = Label(
             self.status_bar,
-            variable=self.progress_var,
-            mode='determinate',
-            length=200
+            text=mode_icon,
+            font=("Arial", 12),
+            bg=self.theme['secondary_color'],
+            fg=self.theme['text_color']
         )
-        self.progress_bar.pack(side="right", padx=10)
-        self.progress_bar.pack_forget()  # Esconder inicialmente
+        mode_label.pack(side="right", padx=10)
     
     def _on_mousewheel(self, event):
         """Controla o scroll com mouse wheel"""
         self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
     
-    def update_status(self, message, is_error=False):
-        """Atualiza a mensagem na barra de status"""
-        color = self.theme['error_color'] if is_error else self.theme['text_color']
-        self.status_label.config(text=message, fg=color)
-        self.root.update_idletasks()
-    
-    def update_games_status(self):
-        """Atualiza o status de todos os jogos"""
-        self.create_game_cards()
-    
     def refresh_games(self):
         """Atualiza a lista de jogos"""
         self.data = self.load_data()
         self.games = self.data.get('games', [])
-        self.update_games_status()
-        self.update_status("Game list refreshed")
+        self.create_game_cards()
+        self.status_label.config(
+            text=f"Refreshed - {len(self.games)} games found | Mode: {self.mode.capitalize()}"
+        )
     
     def change_theme(self, theme_name):
         """Muda o tema da aplicação"""
@@ -386,153 +600,51 @@ class GameLauncher:
         self.save_config()
         self.theme = self.load_theme(theme_name)
         
-        # Reiniciar a interface
+        # Recriar toda a interface
         for widget in self.root.winfo_children():
             widget.destroy()
         self.setup_ui()
     
     def show_about(self):
         """Mostra janela 'About'"""
-        about_text = """Game Launcher v1.0
+        about_text = """LunaEngine Games Launcher v1.0
 
-A simple launcher for downloading and playing games from GitHub.
+A game launcher for LunaEngine games collection.
 
 Features:
-• Download games directly from GitHub
+• Play games locally from the games/ folder
+• Download games from GitHub (GitHub mode)
 • Light and dark themes
-• Automatic dependency installation
-• Game library management
+• Simple and intuitive interface
 
-Created with Python and Tkinter"""
+GitHub: https://github.com/MrJuaumBR/LunaEngine-Games
+
+Usage:
+  python launcher.py              # Local mode
+  python launcher.py --github     # GitHub mode"""
         
-        messagebox.showinfo("About Game Launcher", about_text)
-    
-    def install_game(self, game, force=False):
-        """Instala um jogo do GitHub"""
-        if not force and os.path.exists(game['path']):
-            response = messagebox.askyesno(
-                "Game Already Installed",
-                f"{game['name']} is already installed.\n\n"
-                "Do you want to reinstall it?\n"
-                "(Existing files will be overwritten)"
-            )
-            if not response:
-                return
-        
-        # Confirmar instalação
-        confirm_msg = f"Install {game['name']} v{game['version']}?\n\n" + \
-                     f"Description: {game['description']}\n\n" + \
-                     "The game will be downloaded from GitHub."
-        
-        if not messagebox.askyesno("Confirm Installation", confirm_msg):
-            return
-        
-        # Iniciar download em thread separada
-        thread = threading.Thread(target=self.download_game_thread, args=(game,))
-        thread.daemon = True
-        thread.start()
-    
-    def download_game_thread(self, game):
-        """Thread para download do jogo"""
-        self.downloading = True
-        self.show_progress_bar()
-        
-        try:
-            # URL do arquivo no GitHub
-            download_url = f"{self.github_base}/{game['github_path']}"
-            
-            self.update_status(f"Downloading {game['name']}...")
-            
-            # Criar pasta temporária
-            temp_dir = Path("temp_download")
-            temp_dir.mkdir(exist_ok=True)
-            
-            # Nome do arquivo ZIP
-            zip_filename = temp_dir / f"{game['name'].replace(' ', '_')}.zip"
-            
-            # Download com progresso
-            response = requests.get(download_url, stream=True)
-            total_size = int(response.headers.get('content-length', 0))
-            
-            if total_size == 0:
-                raise Exception("Could not determine file size")
-            
-            downloaded = 0
-            with open(zip_filename, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
-                        downloaded += len(chunk)
-                        progress = (downloaded / total_size) * 100
-                        self.progress_var.set(progress)
-            
-            self.update_status(f"Extracting {game['name']}...")
-            
-            # Extrair arquivo
-            extract_path = Path(game['path']).parent
-            extract_path.mkdir(parents=True, exist_ok=True)
-            
-            with zipfile.ZipFile(zip_filename, 'r') as zip_ref:
-                zip_ref.extractall(extract_path)
-            
-            # Limpar arquivos temporários
-            shutil.rmtree(temp_dir)
-            
-            # Instalar dependências
-            if 'requirements' in game and game['requirements']:
-                self.update_status(f"Installing dependencies for {game['name']}...")
-                for req in game['requirements']:
-                    subprocess.run([sys.executable, "-m", "pip", "install", req], 
-                                 capture_output=True, text=True)
-            
-            self.update_status(f"{game['name']} installed successfully!", is_error=False)
-            messagebox.showinfo("Installation Complete", 
-                              f"{game['name']} has been successfully installed!\n\n"
-                              f"You can now play the game.")
-            
-            # Atualizar interface
-            self.root.after(0, self.update_games_status)
-            
-        except Exception as e:
-            self.update_status(f"Error installing {game['name']}: {str(e)}", is_error=True)
-            messagebox.showerror("Installation Error", 
-                               f"Failed to install {game['name']}:\n{str(e)}")
-        
-        finally:
-            self.downloading = False
-            self.hide_progress_bar()
-    
-    def show_progress_bar(self):
-        """Mostra a barra de progresso"""
-        self.progress_var.set(0)
-        self.progress_bar.pack(side="right", padx=10)
-    
-    def hide_progress_bar(self):
-        """Esconde a barra de progresso"""
-        self.progress_bar.pack_forget()
+        messagebox.showinfo("About LunaEngine Games Launcher", about_text)
     
     def play_game(self, game):
         """Executa um jogo"""
         try:
-            game_path = game['path']
+            game_path = game.get('full_path') or game.get('path')
             
-            if not os.path.exists(game_path):
+            if not game_path or not os.path.exists(game_path):
                 messagebox.showerror("Error", 
-                                   f"Game file not found:\n{game_path}\n\n"
-                                   "Try reinstalling the game.")
+                                   f"Game file not found:\n{game_path}")
                 return
             
-            self.update_status(f"Launching {game['name']}...")
+            self.status_label.config(text=f"Launching {game['name']}...")
             
             # Determinar como executar
             if game_path.endswith('.py'):
                 # Executar script Python
-                subprocess.Popen([sys.executable, game_path], 
-                               creationflags=subprocess.CREATE_NEW_CONSOLE 
-                               if sys.platform == "win32" else 0)
-            elif game_path.endswith('.exe'):
-                # Executar executável
-                subprocess.Popen([game_path])
+                if sys.platform == "win32":
+                    subprocess.Popen(['python', game_path], 
+                                   creationflags=subprocess.CREATE_NEW_CONSOLE)
+                else:
+                    subprocess.Popen(['python3', game_path])
             else:
                 # Tentar abrir com programa padrão
                 if sys.platform == "win32":
@@ -540,40 +652,121 @@ Created with Python and Tkinter"""
                 else:
                     subprocess.Popen(['xdg-open', game_path])
             
-            self.update_status(f"{game['name']} launched")
+            self.status_label.config(text=f"Launched {game['name']}")
             
         except Exception as e:
-            self.update_status(f"Error launching {game['name']}: {str(e)}", is_error=True)
+            self.status_label.config(text=f"Error launching {game['name']}")
             messagebox.showerror("Launch Error", 
                                f"Could not launch {game['name']}:\n{str(e)}")
+    
+    def open_game_folder(self, game):
+        """Abre a pasta do jogo"""
+        try:
+            game_folder = Path(game.get('full_path', '')).parent
+            if game_folder.exists():
+                if sys.platform == "win32":
+                    os.startfile(game_folder)
+                elif sys.platform == "darwin":
+                    subprocess.Popen(['open', str(game_folder)])
+                else:
+                    subprocess.Popen(['xdg-open', str(game_folder)])
+            else:
+                messagebox.showerror("Error", "Game folder not found")
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not open folder:\n{str(e)}")
+    
+    def open_games_folder(self):
+        """Abre a pasta games/"""
+        try:
+            if self.games_dir.exists():
+                if sys.platform == "win32":
+                    os.startfile(self.games_dir)
+                elif sys.platform == "darwin":
+                    subprocess.Popen(['open', str(self.games_dir)])
+                else:
+                    subprocess.Popen(['xdg-open', str(self.games_dir)])
+            else:
+                messagebox.showwarning("Warning", 
+                    f"Games folder not found at:\n{self.games_dir}\n"
+                    "Creating empty folder...")
+                self.games_dir.mkdir(parents=True)
+                if sys.platform == "win32":
+                    os.startfile(self.games_dir)
+        except Exception as e:
+            messagebox.showerror("Error", f"Could not open games folder:\n{str(e)}")
+    
+    def show_game_details(self, game):
+        """Mostra detalhes do jogo"""
+        details = f"""Game: {game['name']}
+Version: {game.get('version', '1.0.0')}
+Description: {game['description']}
+Path: {game.get('path', 'Unknown')}
+Requirements: {', '.join(game.get('requirements', [])) or 'None'}
+
+Status: {'Available' if os.path.exists(game.get('full_path', '')) else 'Not installed'}"""
+        
+        messagebox.showinfo(f"Game Details - {game['name']}", details)
+    
+    def install_game(self, game):
+        """Instala um jogo do GitHub (modo GitHub)"""
+        if self.mode != 'github':
+            return
+        
+        messagebox.showinfo("Coming Soon", 
+            "GitHub download feature coming soon!\n\n"
+            "For now, please:\n"
+            "1. Switch to local mode\n"
+            "2. Place game folders in the 'games' directory\n"
+            "3. Run in local mode")
+    
+    def switch_to_local_mode(self):
+        """Muda para o modo local"""
+        self.config['last_mode'] = 'local'
+        self.save_config()
+        messagebox.showinfo("Switch Mode", 
+            "Switching to Local Mode.\n\n"
+            "Please restart the launcher.")
+        self.root.quit()
+    
+    def switch_to_github_mode(self):
+        """Muda para o modo GitHub"""
+        self.config['last_mode'] = 'github'
+        self.save_config()
+        messagebox.showinfo("Switch Mode", 
+            "Switching to GitHub Mode.\n\n"
+            "Please restart the launcher.")
+        self.root.quit()
+    
+    def update_games_status(self):
+        """Atualiza o status dos jogos"""
+        # Esta função é chamada após criar a interface
+        pass
+
 
 def main():
+    """Função principal"""
+    parser = argparse.ArgumentParser(description='LunaEngine Games Launcher')
+    parser.add_argument('--github', action='store_true', 
+                       help='Run in GitHub mode (download from GitHub)')
+    parser.add_argument('--local', action='store_true', 
+                       help='Run in local mode (use local games folder)')
+    
+    args = parser.parse_args()
+    
+    # Determinar modo
+    if args.github:
+        mode = 'github'
+    elif args.local:
+        mode = 'local'
+    else:
+        # Modo padrão: local
+        mode = 'local'
+    
+    # Criar e executar aplicação
     root = Tk()
-    
-    # Configurações iniciais da janela
-    root.title("Game Launcher")
-    root.geometry("900x700")
-    
-    # Verificar dependências
-    try:
-        import requests
-        from PIL import Image
-    except ImportError:
-        print("Installing required packages...")
-        subprocess.run([sys.executable, "-m", "pip", "install", "requests", "pillow"])
-    
-    # Iniciar aplicação
-    app = GameLauncher(root)
-    
-    # Centralizar janela
-    root.update_idletasks()
-    width = root.winfo_width()
-    height = root.winfo_height()
-    x = (root.winfo_screenwidth() // 2) - (width // 2)
-    y = (root.winfo_screenheight() // 2) - (height // 2)
-    root.geometry(f'{width}x{height}+{x}+{y}')
-    
+    app = GameLauncher(root, mode)
     root.mainloop()
+
 
 if __name__ == "__main__":
     main()

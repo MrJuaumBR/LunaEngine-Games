@@ -9,5 +9,7 @@
     "secondary_color": "#2d4059",
     "highlight_color": "#00adb5",
     "error_color": "#ff6b6b",
-    "success_color": "#4CAF50"
+    "success_color": "#4CAF50",
+    "warning_color": "#ffa726",
+    "border_color": "#30475e"
 }

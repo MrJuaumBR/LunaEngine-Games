@@ -1,7 +1,6 @@
 {
-    "theme": "dark",
-    "language": "en",
-    "download_path": "games",
-    "check_updates_on_start": true,
-    "github_token": ""
+  "theme": "dark",
+  "language": "en",
+  "auto_update": false,
+  "last_mode": "github"
 }

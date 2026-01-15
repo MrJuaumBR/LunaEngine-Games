@@ -2,31 +2,35 @@
     "games": [
         {
             "name": "Farming",
-            "path": "games/Farming/main.py",
+            "path": "Farming/main.py",
             "version": "0.0.1",
             "description": "A simple farming game",
-            "icon": "assets/icon.png"
+            "icon": "assets/icon.png",
+            "requirements": ["pygame"]
         },
         {
             "name": "Naves",
-            "path": "games/Naves/main.py",
+            "path": "Naves/main.py",
             "version": "0.0.1",
             "description": "A simple space game like the old ones",
-            "icon": "assets/icon.png"
+            "icon": "assets/icon.png",
+            "requirements": ["pygame"]
         },
         {
             "name": "Scarf of Night",
-            "path": "games/Scarf of Night/main.py",
+            "path": "Scarf of Night/main.py",
             "version": "0.0.1",
-            "description": "A simple plataformer game",
-            "icon": "assets/icon.png"
+            "description": "A simple platformer game",
+            "icon": "assets/icon.png",
+            "requirements": ["pygame"]
         },
         {
             "name": "Snake",
-            "path": "games/Snake/main.py",
+            "path": "Snake/main.py",
             "version": "0.0.1",
             "description": "A simple snake game",
-            "icon": "/icon.png" 
+            "icon": "assets/icon.png",
+            "requirements": ["pygame"]
         }
     ]
 }
