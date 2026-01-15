@@ -1,36 +1,69 @@
 {
-    "games": [
-        {
-            "name": "Farming",
-            "path": "Farming/main.py",
-            "version": "0.0.1",
-            "description": "A simple farming game",
-            "icon": "assets/icon.png",
-            "requirements": ["pygame"]
-        },
-        {
-            "name": "Naves",
-            "path": "Naves/main.py",
-            "version": "0.0.1",
-            "description": "A simple space game like the old ones",
-            "icon": "assets/icon.png",
-            "requirements": ["pygame"]
-        },
-        {
-            "name": "Scarf of Night",
-            "path": "Scarf of Night/main.py",
-            "version": "0.0.1",
-            "description": "A simple platformer game",
-            "icon": "assets/icon.png",
-            "requirements": ["pygame"]
-        },
-        {
-            "name": "Snake",
-            "path": "Snake/main.py",
-            "version": "0.0.1",
-            "description": "A simple snake game",
-            "icon": "assets/icon.png",
-            "requirements": ["pygame"]
-        }
-    ]
+  "info": {
+    "version": "0.0.1",
+    "author": "MrJuaumBR",
+    "total_games": 4
+  },
+  "games": [
+    {
+      "game_name": "Farming",
+      "game_version": "0.0.1",
+      "game_author": "MrJuaumBR",
+      "game_tags": [
+        "cozy",
+        "simulation",
+        "time"
+      ],
+      "game_category": "game",
+      "game_description": "A Simple Farming Game",
+      "total_files": 18,
+      "total_size": 0.9622774124145508
+    },
+    {
+      "game_name": "Naves",
+      "game_version": "0.0.1",
+      "game_author": "MrJuaumBR",
+      "game_tags": [
+        "retro",
+        "classic",
+        "arcade",
+        "spaceshooter"
+      ],
+      "game_category": "game",
+      "game_description": "A simple spaceshooter like the old ones that we have on web and old consoles",
+      "total_files": 19,
+      "total_size": 3.0538082122802734
+    },
+    {
+      "game_name": "Scarf of Night",
+      "game_version": "0.0.1",
+      "game_author": "MrJuaumBR",
+      "game_tags": [
+        "plataformer",
+        "physics",
+        "hard",
+        "ninja"
+      ],
+      "game_category": "game",
+      "game_description": "A Plataformer game that you need to complete as fast as possible",
+      "total_files": 26,
+      "total_size": 0.8631191253662109
+    },
+    {
+      "game_name": "Snake",
+      "game_version": "0.0.1",
+      "game_author": "MrJuaumBR",
+      "game_tags": [
+        "snake",
+        "retro",
+        "growth",
+        "classic",
+        "arcade"
+      ],
+      "game_category": "game",
+      "game_description": "A Snake demo like the old ones that you easily found literally anywhere",
+      "total_files": 4,
+      "total_size": 0.027299880981445312
+    }
+  ]
 }
