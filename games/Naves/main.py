@@ -1,9 +1,7 @@
 from lunaengine.core import LunaEngine, Scene, AudioSystem, AudioChannel
 from lunaengine.graphics import SpriteSheet, Animation, Camera, CameraMode, ParticleType, PhysicsType, ExitPoint
 from lunaengine.ui import *
-import pygame, os, json, time, random
-import sys
-import argparse
+import pygame, os, json, time, random, argparse, sys
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--debug', action='store_true', help='Enable debug mode')

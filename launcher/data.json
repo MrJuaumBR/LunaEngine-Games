@@ -1,0 +1,41 @@
+{
+    "github_base_url": "https://github.com/MrJuaumBR/LunaEngine-Games/raw/main",
+    "games": [
+        {
+            "name": "Farming",
+            "path": "games/Farming/main.py",
+            "version": "0.0.1",
+            "description": "A simple farming game",
+            "icon": "assets/icon.png",
+            "github_path": "games/Farming.zip",
+            "requirements": ["pygame", "lunaengine"]
+        },
+        {
+            "name": "Naves",
+            "path": "games/Naves/main.py",
+            "version": "0.0.1",
+            "description": "A simple space game like the old ones",
+            "icon": "assets/icon.png",
+            "github_path": "games/Naves.zip",
+            "requirements": ["pygame", "lunaengine"]
+        },
+        {
+            "name": "Scarf of Night",
+            "path": "games/Scarf of Night/main.py",
+            "version": "0.0.1",
+            "description": "A simple platformer game",
+            "icon": "assets/icon.png",
+            "github_path": "games/Scarf_of_Night.zip",
+            "requirements": ["pygame", "lunaengine"]
+        },
+        {
+            "name": "Snake",
+            "path": "games/Snake/main.py",
+            "version": "0.0.1",
+            "description": "A simple snake game",
+            "icon": "assets/icon.png",
+            "github_path": "games/Snake.zip",
+            "requirements": ["pygame", "lunaengine"]
+        }
+    ]
+}

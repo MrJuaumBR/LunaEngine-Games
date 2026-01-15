@@ -36,7 +36,6 @@ class Leaderboard:
             "date": datetime.now().strftime("%Y-%m-%d %H:%M")
         })
         self.scores.sort(key=lambda x: x["score"], reverse=True)
-        self.scores = self.scores[:10]
         self.save_scores()
     
     def get_top_scores(self, count=10):
