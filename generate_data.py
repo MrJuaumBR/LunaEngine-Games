@@ -23,6 +23,8 @@ class game_info:
     game_tags:list[str]
     game_category:str
     game_description:str
+    game_main_file:str
+    game_icon:str
     total_files:int
     total_size:float
     requirements:list[str]
@@ -66,6 +68,8 @@ def get_game_info(game_path) -> game_info:
         gi.game_tags = fix_string(f.readline(-1), True)
         gi.game_category = fix_string(f.readline(-1))
         gi.game_description = fix_string(f.readline(-1))
+        gi.game_main_file = fix_string(f.readline(-1))
+        gi.game_icon = fix_string(f.readline(-1))
         gi.game_compact_file = f'{gi.game_name}-{gi.game_version}'
         
         

@@ -3,7 +3,7 @@ from lunaengine.ui import *
 from lunaengine.graphics import SpriteSheet, Animation, Camera, CameraMode, ParticleConfig, ParticleType
 import pygame, os, random, time, json, sys
 
-path_assets = os.path.abspath('./assets/')
+path_assets = os.path.dirname(__file__) + '/assets/'
 path_font_ninja = os.path.join(path_assets, 'ninja_font.ttf')
 
 DEBUG_MODE = '--debug' in sys.argv
@@ -25,8 +25,8 @@ class Data:
     
     def load_leaderboard(self):
         try:
-            if os.path.exists('./leaderboard.json'):
-                with open('./leaderboard.json', 'r') as f:
+            if os.path.exists(f'{os.path.dirname(__file__)}/leaderboard.json'):
+                with open(f'{os.path.dirname(__file__)}/leaderboard.json', 'r') as f:
                     self.leaderboard = json.load(f)
         except Exception as e:
             print(f"Erro ao carregar leaderboard: {e}")
@@ -34,7 +34,7 @@ class Data:
     
     def save_leaderboard(self):
         try:
-            with open('./leaderboard.json', 'w') as f:
+            with open(f'{os.path.dirname(__file__)}/leaderboard.json', 'w') as f:
                 json.dump(self.leaderboard, f, indent=2)
         except Exception as e:
             print(f"Erro ao salvar leaderboard: {e}")
@@ -1264,7 +1264,8 @@ class GameScene(Scene):
 
 def main():
     try:
-        engine = LunaEngine("Scarf of Night", 1280, 720, True)
+        engine = LunaEngine("Scarf of Night", 1280, 720)
+        pygame.display.set_icon(pygame.image.load(f"{os.path.dirname(__file__)}/assets/icon.png"))
         engine.initialize()
         
         data.ratio = pygame.Vector2(engine.width / 1280, engine.height / 720)

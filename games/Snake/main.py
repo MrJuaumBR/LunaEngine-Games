@@ -15,8 +15,8 @@ class Leaderboard:
         
     def load_scores(self):
         try:
-            if os.path.exists(self.filename):
-                with open(self.filename, 'r') as f:
+            if os.path.exists(f'{os.path.dirname(__file__)}/'+self.filename):
+                with open(f'{os.path.dirname(__file__)}/'+self.filename, 'r') as f:
                     return json.load(f)
         except Exception:
             pass
@@ -584,7 +584,8 @@ class InGameScene(Scene):
 
 def main():
     try:
-        engine = LunaEngine("Snake Game - Enhanced Edition", 1024, 720, True)
+        engine = LunaEngine("Snake Game", 1024, 720)
+        pygame.display.set_icon(pygame.image.load(f"{os.path.dirname(__file__)}/icon.png"))
         engine.initialize()
         
         engine.add_scene("MainMenu", MainMenuScene)

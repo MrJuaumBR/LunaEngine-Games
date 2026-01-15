@@ -7,7 +7,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--debug', action='store_true', help='Enable debug mode')
 args = parser.parse_args()
 
-engine = LunaEngine("Naves")
+assets_path = os.path.dirname(__file__) + '/assets'
 
 class Data:
     asteroids: list
@@ -51,7 +51,7 @@ class MainMenu(Scene):
         self.create_ui()
         
     def create_ui(self):
-        self.add_ui_element(TextLabel(320*data.size_fix.x, 100*data.size_fix.y, "Naves", 102, (255, 255, 255),font_name=os.path.abspath("./assets/SpaceMono.ttf"), root_point=(0.5, 0)))
+        self.add_ui_element(TextLabel(320*data.size_fix.x, 100*data.size_fix.y, "Naves", 102, (255, 255, 255),font_name=os.path.abspath(f"{assets_path}/SpaceMono.ttf"), root_point=(0.5, 0)))
         
         self.play_button = Button(320*data.size_fix.x, 300*data.size_fix.y, 300*data.size_fix.x, 90*data.size_fix.y, "PLAY", 40, None, (0.5, 0.5))
         self.play_button.set_on_click(self.play_clicked)
@@ -195,7 +195,7 @@ class Game(Scene):
             if event.key == pygame.K_k:
                 self.player.health -= 1
         
-        self.score_label = TextLabel(self.engine.width-10, 15, f"Pontuação: {int(self.player.score)}", 24, (255, 255, 255),font_name=os.path.join("assets", "SpaceMono.ttf"), root_point=(1, 0))
+        self.score_label = TextLabel(self.engine.width-10, 15, f"Pontuação: {int(self.player.score)}", 24, (255, 255, 255),font_name=f"{assets_path}/SpaceMono.ttf", root_point=(1, 0))
         self.add_ui_element(self.score_label)
         
         self.audio_system.play_music("bgm", 0.7, 1.0, True)
@@ -222,9 +222,9 @@ class Game(Scene):
         super().__init__(engine)
         
         self.audio_system = AudioSystem()
-        self.audio_system.load_sound_effect("explosion", "./assets/explosion.wav")
-        self.audio_system.load_sound_effect("shoot", "./assets/laserShoot.wav")
-        self.audio_system.load_music("bgm", "./assets/music.mp3")
+        self.audio_system.load_sound_effect("explosion", f"{assets_path}/explosion.wav")
+        self.audio_system.load_sound_effect("shoot", f"{assets_path}/laserShoot.wav")
+        self.audio_system.load_music("bgm", f"{assets_path}/music.mp3")
         
         self.parallax_x = 0
         self.parallax_sample = self.create_parallax_layer(0.94)
@@ -413,7 +413,7 @@ class Game(Scene):
             'score': int(self.player.score)
         })
         
-        with open("./leaderboard.json", "w") as f:
+        with open(f"{os.path.dirname(__file__)}/leaderboard.json", "w") as f:
             json.dump(data.leaderboard, f)
             
     def render(self, renderer):
@@ -479,30 +479,31 @@ class GameOver(Scene):
 
 def main():
     data.started = time.time()
-    engine = LunaEngine("Naves", width = 1920, height = 1080)
+    engine = LunaEngine("Naves", width=1024, height=768)
+    pygame.display.set_icon(pygame.image.load(f"{assets_path}/icon.png"))
     engine.initialize()
     
     data.size_fix = pygame.Vector2(engine.width/1024, engine.height/768)
 
-    data.asteroids = SpriteSheet("./assets/Asteroids.png").get_sprites_at_regions([
+    data.asteroids = SpriteSheet(f"{assets_path}/Asteroids.png").get_sprites_at_regions([
         (0, 0, 32, 32), (32, 0, 32, 32), (64, 0, 32, 32), (96, 0, 32, 32), (128, 0, 32 ,32),
         (0, 32, 32, 32), (32, 32, 32, 32), (64, 32, 32, 32), (96, 32, 32, 32), (128, 32, 32, 32),
         (0, 64, 32, 32), (32, 64, 32, 32), (64, 64, 32, 32), (96, 64, 32, 32), (128, 64, 32, 32),])
-    data.health_bar = SpriteSheet("./assets/Health-bar.png").get_sprites_at_regions([pygame.Rect(640, 0, 128, 32), pygame.Rect(512, 0, 128, 32), pygame.Rect(384, 0, 128, 32), pygame.Rect(256, 0, 128, 32), pygame.Rect(128, 0, 128, 32), pygame.Rect(0, 0, 128, 32)])
-    data.spaceship = Animation(spritesheet_file='./assets/Spaceship.png', size=(32, 32), start_pos=(0, 0), frame_count=5, scale=(2.5 * data.size_fix.x, 2.5 * data.size_fix.x), duration=0.75, loop=True)
-    data.spaceship_explosion = Animation(spritesheet_file='./assets/Spaceship-explosion.png', size=(32, 32), start_pos=(0, 0), frame_count=12, scale=(2.5 * data.size_fix.x, 2.5 * data.size_fix.x), duration=0.7, loop=False)
-    data.background = pygame.transform.scale(pygame.image.load(os.path.abspath("./assets/background.jpg")).convert_alpha(), (engine.width, engine.height))
+    data.health_bar = SpriteSheet(f"{assets_path}/Health-bar.png").get_sprites_at_regions([pygame.Rect(640, 0, 128, 32), pygame.Rect(512, 0, 128, 32), pygame.Rect(384, 0, 128, 32), pygame.Rect(256, 0, 128, 32), pygame.Rect(128, 0, 128, 32), pygame.Rect(0, 0, 128, 32)])
+    data.spaceship = Animation(spritesheet_file=f'{assets_path}/Spaceship.png', size=(32, 32), start_pos=(0, 0), frame_count=5, scale=(2.5 * data.size_fix.x, 2.5 * data.size_fix.x), duration=0.75, loop=True)
+    data.spaceship_explosion = Animation(spritesheet_file=f'{assets_path}/Spaceship-explosion.png', size=(32, 32), start_pos=(0, 0), frame_count=12, scale=(2.5 * data.size_fix.x, 2.5 * data.size_fix.x), duration=0.7, loop=False)
+    data.background = pygame.transform.scale(pygame.image.load(os.path.abspath(f"{assets_path}/background.jpg")).convert_alpha(), (engine.width, engine.height))
     
     bullet_surface = pygame.Surface((8, 4), pygame.SRCALPHA)
     pygame.draw.ellipse(bullet_surface, (255, 255, 0), (0, 0, 8, 4))
     data.bullet_sprite = bullet_surface
     
-    if not os.path.exists("./leaderboard.json"):
-        with open("./leaderboard.json", "w") as f:
+    if not os.path.exists(f"{os.path.dirname(__file__)}/leaderboard.json"):
+        with open(f"{os.path.dirname(__file__)}/leaderboard.json", "w") as f:
             f.write('{"scores": []}')
             f.close()
             
-    data.leaderboard = json.load(open("./leaderboard.json"))
+    data.leaderboard = json.load(open(f"{os.path.dirname(__file__)}/leaderboard.json"))
     
     engine.add_scene("MainMenu", MainMenu)
     engine.add_scene("Game", Game)

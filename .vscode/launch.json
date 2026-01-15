@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Launcher",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "launcher.py",
+            "cwd": "${workspaceFolder}/launcher",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+    ]
+}

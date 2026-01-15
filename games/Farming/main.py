@@ -3,7 +3,7 @@ from lunaengine.ui import *
 from lunaengine.graphics import SpriteSheet, Animation, Camera, CameraMode, ParticleConfig, ParticleType
 import pygame, os, random, time, json
 
-path_assets = os.path.abspath('./assets/')
+path_assets = os.path.dirname(__file__) + '/assets/'
 path_font_jersey = os.path.join(path_assets, 'Jersey.ttf')
 path_font_roboto = os.path.join(path_assets, 'RobotoMono.ttf')
 
@@ -15,15 +15,15 @@ class Data:
     ratio:pygame.Vector2
     score:int = 0
     def __init__(self):
-        if not os.path.exists('./leaderboard.json'):
+        if not os.path.exists(f'{os.path.dirname(__file__)}/leaderboard.json'):
             self.leaderboard = {
                 "scores": []
             }
-            with open('./leaderboard.json', 'w') as f:
+            with open(f'{os.path.dirname(__file__)}/leaderboard.json', 'w') as f:
                 json.dump(self.leaderboard, f)
                 f.close()
         else:
-            with open('./leaderboard.json', 'r') as f:
+            with open(f'{os.path.dirname(__file__)}/leaderboard.json', 'r') as f:
                 self.leaderboard = json.load(f)
                 f.close()
                 
@@ -36,7 +36,7 @@ class Data:
         self.leaderboard["scores"].sort(key=lambda x: x["score"], reverse=True)
         self.leaderboard["scores"] = self.leaderboard["scores"][:10]
         
-        with open('./leaderboard.json', 'w') as f:
+        with open(f'{os.path.dirname(__file__)}/leaderboard.json', 'w') as f:
             json.dump(self.leaderboard, f)
             f.close()
             
@@ -425,9 +425,9 @@ class GameScene(Scene):
     
     def __init__(self, engine):
         super().__init__(engine)
-        self.audio_system.load_music('music', os.path.join('assets', 'music.mp3'))
-        self.audio_system.load_sound_effect('tree_hit', os.path.join('assets', 'hit-tree.wav'))
-        self.audio_system.load_sound_effect('rock_hit', os.path.join('assets', 'hit-rock.wav'))
+        self.audio_system.load_music('music', f'{path_assets}/music.mp3')
+        self.audio_system.load_sound_effect('tree_hit', f'{path_assets}/hit-tree.wav')
+        self.audio_system.load_sound_effect('rock_hit', f'{path_assets}/hit-rock.wav')
 
     def input_handle(self, dt):
         if self.start_playing == None:
@@ -792,6 +792,7 @@ class GameScene(Scene):
 
 def main():
     engine = LunaEngine("Farming", 1280, 720, True)
+    pygame.display.set_icon(pygame.image.load(f"{os.path.dirname(__file__)}/assets/icon.png"))
     engine.initialize()
     
     data.ratio = pygame.Vector2(engine.width / 1280, engine.height / 720)

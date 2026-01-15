@@ -1,2 +1,4 @@
 requests
 customtkinter
+
+# And the games dependancies may variate

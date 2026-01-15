@@ -16,9 +16,11 @@
       ],
       "game_category": "game",
       "game_description": "A Simple Farming Game",
+      "game_main_file": "main.py",
+      "game_icon": "assets/icon.png",
       "game_compact_file": "Farming-0.0.1",
-      "total_files": 18,
-      "total_size": 0.9622774124145508,
+      "total_files": 20,
+      "total_size": 0.9638385772705078,
       "requirements": [
         "lunaengine>=0.1.4.2"
       ]
@@ -35,12 +37,11 @@
       ],
       "game_category": "game",
       "game_description": "A simple spaceshooter like the old ones that we have on web and old consoles",
-<<<<<<< Updated upstream
-=======
+      "game_main_file": "main.py",
+      "game_icon": "assets/icon.png",
       "game_compact_file": "Naves-0.0.1",
->>>>>>> Stashed changes
-      "total_files": 19,
-      "total_size": 3.0538082122802734,
+      "total_files": 21,
+      "total_size": 3.055365562438965,
       "requirements": [
         "LunaEngine>=0.1.4.2"
       ]
@@ -57,12 +58,11 @@
       ],
       "game_category": "game",
       "game_description": "A Plataformer game that you need to complete as fast as possible",
-<<<<<<< Updated upstream
-=======
+      "game_main_file": "main.py",
+      "game_icon": "assets/icon.png",
       "game_compact_file": "Scarf of Night-0.0.1",
->>>>>>> Stashed changes
-      "total_files": 26,
-      "total_size": 0.8631191253662109,
+      "total_files": 28,
+      "total_size": 0.8649435043334961,
       "requirements": [
         "lunaengine>=0.1.5"
       ]
@@ -80,19 +80,14 @@
       ],
       "game_category": "game",
       "game_description": "A Snake demo like the old ones that you easily found literally anywhere",
-<<<<<<< Updated upstream
-=======
+      "game_main_file": "main.py",
+      "game_icon": "icon.png",
       "game_compact_file": "Snake-0.0.1",
->>>>>>> Stashed changes
-      "total_files": 4,
-      "total_size": 0.027299880981445312,
+      "total_files": 6,
+      "total_size": 0.028898239135742188,
       "requirements": [
         "lunaengine>=0.1.5"
       ]
     }
   ]
-<<<<<<< Updated upstream
 }
-=======
-}
->>>>>>> Stashed changes
