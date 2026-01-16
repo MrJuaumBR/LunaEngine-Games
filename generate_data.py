@@ -9,7 +9,7 @@ path_root = os.path.dirname(os.path.abspath(__file__))
 path_games = path_root + '\\games'
 
 blacklist_folders = ['.venv', '.vscode', '__pycache__']
-blacklist_files = ['.md','.txt', '.json', '.pyc', '.aseprite', '.ttf']
+blacklist_files = ['md','txt', 'json', 'pyc', 'aseprite', 'zip']
 
 def remove_readonly(func, path, excinfo):
     """Handler para remover atributo readonly no Windows"""

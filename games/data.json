@@ -2,9 +2,31 @@
   "info": {
     "version": "0.0.1",
     "author": "MrJuaumBR",
-    "total_games": 4
+    "total_games": 6
   },
   "games": [
+    {
+      "game_name": "2048",
+      "game_version": "0.0.1",
+      "game_author": "MrJuaumBR",
+      "game_tags": [
+        "cozy",
+        "simple",
+        "arcade",
+        "math",
+        "puzzle"
+      ],
+      "game_category": "game",
+      "game_description": "This game is the game of the math, 2, 4, 8, 16, 32, 64, ...",
+      "game_main_file": "main.py",
+      "game_icon": "icon.png",
+      "game_compact_file": "2048-0.0.1",
+      "total_files": 3,
+      "total_size": 0.03593158721923828,
+      "requirements": [
+        "lunaengine"
+      ]
+    },
     {
       "game_name": "Farming",
       "game_version": "0.0.1",
@@ -19,8 +41,8 @@
       "game_main_file": "main.py",
       "game_icon": "assets/icon.png",
       "game_compact_file": "Farming-0.0.1",
-      "total_files": 20,
-      "total_size": 0.9638385772705078,
+      "total_files": 12,
+      "total_size": 0.9488534927368164,
       "requirements": [
         "lunaengine>=0.1.4.2"
       ]
@@ -40,10 +62,30 @@
       "game_main_file": "main.py",
       "game_icon": "assets/icon.png",
       "game_compact_file": "Naves-0.0.1",
-      "total_files": 21,
-      "total_size": 3.055365562438965,
+      "total_files": 14,
+      "total_size": 3.0400161743164062,
       "requirements": [
         "LunaEngine>=0.1.4.2"
+      ]
+    },
+    {
+      "game_name": "PuzzleSlider",
+      "game_version": "0.0.1",
+      "game_author": "MrJuaumBR",
+      "game_tags": [
+        "simple",
+        "puzzle",
+        "arcade"
+      ],
+      "game_category": "game",
+      "game_description": "Just a Puzzle Slider game",
+      "game_main_file": "main.py",
+      "game_icon": "icon.png",
+      "game_compact_file": "PuzzleSlider-0.0.1",
+      "total_files": 3,
+      "total_size": 0.02555370330810547,
+      "requirements": [
+        "lunaengine"
       ]
     },
     {
@@ -61,8 +103,8 @@
       "game_main_file": "main.py",
       "game_icon": "assets/icon.png",
       "game_compact_file": "Scarf of Night-0.0.1",
-      "total_files": 28,
-      "total_size": 0.8649435043334961,
+      "total_files": 14,
+      "total_size": 0.7618923187255859,
       "requirements": [
         "lunaengine>=0.1.5"
       ]
@@ -83,8 +125,8 @@
       "game_main_file": "main.py",
       "game_icon": "icon.png",
       "game_compact_file": "Snake-0.0.1",
-      "total_files": 6,
-      "total_size": 0.028898239135742188,
+      "total_files": 3,
+      "total_size": 0.02827167510986328,
       "requirements": [
         "lunaengine>=0.1.5"
       ]

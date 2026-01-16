@@ -18,6 +18,10 @@
    "value": false
   },
   {
+   "optionDest": "icon_file",
+   "value": "C:/Users/MrPot/OneDrive/Documentos/Projects/LunaEngine-Games/launcher/assets/icons/launcher.ico"
+  },
+  {
    "optionDest": "name",
    "value": "LunaLauncher"
   },

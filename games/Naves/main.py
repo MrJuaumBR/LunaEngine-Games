@@ -478,8 +478,12 @@ class GameOver(Scene):
         pass
 
 def main():
+    fullscreen = False
+    if len(sys.argv) >= 2:
+        if sys.argv[1] == "--fullscreen":
+            fullscreen = True
     data.started = time.time()
-    engine = LunaEngine("Naves", width=1024, height=768)
+    engine = LunaEngine("Naves", width=1024, height=768, fullscreen=fullscreen)
     pygame.display.set_icon(pygame.image.load(f"{assets_path}/icon.png"))
     engine.initialize()
     

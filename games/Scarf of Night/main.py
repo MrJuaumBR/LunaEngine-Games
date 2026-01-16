@@ -1264,7 +1264,11 @@ class GameScene(Scene):
 
 def main():
     try:
-        engine = LunaEngine("Scarf of Night", 1280, 720)
+        fullscreen = False
+        if len(sys.argv) >= 2:
+            if sys.argv[1] == "--fullscreen":
+                fullscreen = True
+        engine = LunaEngine("Scarf of Night", 1280, 720, fullscreen=fullscreen)
         pygame.display.set_icon(pygame.image.load(f"{os.path.dirname(__file__)}/assets/icon.png"))
         engine.initialize()
         

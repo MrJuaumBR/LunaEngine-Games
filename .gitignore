@@ -1,5 +1,6 @@
 temp
 cache
+config
 /launcher/games
 # Byte-compiled / optimized / DLL files
 __pycache__/

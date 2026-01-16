@@ -1,5 +1,5 @@
 import os, sys, requests, json, shutil, hashlib
-from typing import Dict, List, Optional, Tuple, Callable
+from typing import Dict, List, Optional, Tuple, Callable, Literal
 import zipfile
 from pathlib import Path as PathLib
 import tempfile
@@ -14,7 +14,7 @@ class Downloader:
         
     def check_files(self):
         """Create necessary directories"""
-        base_path = os.getcwd()
+        base_path = os.path.dirname(__file__)
         
         required_dirs = [
             'games',
@@ -38,7 +38,7 @@ class Downloader:
     
     def load_installed_games(self) -> Dict:
         """Load installed games registry"""
-        registry_path = os.path.join(os.getcwd(), 'config', 'installed_games.json')
+        registry_path = os.path.join(os.path.dirname(__file__), 'config', 'installed_games.json')
         try:
             with open(registry_path, 'r') as f:
                 return json.load(f)
@@ -47,7 +47,7 @@ class Downloader:
     
     def save_installed_games(self):
         """Save installed games registry"""
-        registry_path = os.path.join(os.getcwd(), 'config', 'installed_games.json')
+        registry_path = os.path.join(os.path.dirname(__file__), 'config', 'installed_games.json')
         with open(registry_path, 'w') as f:
             json.dump(self.installed_games, f, indent=2)
     
@@ -110,6 +110,30 @@ class Downloader:
         for value in self.games_data['games']:
             if 'game_compact_file' in value:
                 self.games_urls[value['game_name']] =base_url + value['game_compact_file'] + '.zip'
+
+    def get_game_icon(self, game_data: dict, is_local:Literal['--local', '--remote']='--remote') -> str:
+        if is_local == '--remote':
+            if 'game_icon' in game_data:
+                base = f'https://raw.githubusercontent.com/MrJuaumBR/LunaEngine-Games/refs/heads/main/games/{game_data["game_name"]}/{game_data["game_icon"]}'
+                file_path = os.path.join(os.path.dirname(__file__), 'cache', f'{game_data['game_name']}-icon.png')
+                if os.path.exists(file_path):
+                    try:
+                        os.remove(file_path)
+                        self.download_file(base, file_path)
+                    except PermissionError: pass
+                else: self.download_file(base, file_path)
+                return file_path
+        elif is_local == '--local':
+            if 'game_icon' in game_data:
+                base = os.path.join(os.path.dirname(__file__), '..', 'games', str(game_data['game_name']), str(game_data['game_icon']))
+                if os.path.exists(base):
+                    # Just copy and move to cache
+                    file_path = os.path.join(os.path.dirname(__file__), 'cache', f'{game_data['game_name']}-icon.png')
+                    try:
+                        shutil.copyfile(base, file_path)
+                    except PermissionError: pass
+                    return file_path
+        return None
     
     def download_file(self, url: str, save_path: str, progress_callback=None) -> bool:
         """
@@ -208,151 +232,238 @@ class Downloader:
         
         return True
     
-    def download_game(self, game_data: Dict, progress_callback: Callable[[float, str], None]=None) -> bool:
+    def download_game(self, game_data: Dict, progress_callback: Callable[[float, str], None]=None, is_local:Literal['--local', '--remote']='--remote') -> bool:
         """
         Download and install a game with queue support
         """
-        game_name = game_data["game_name"]
-        game_version = game_data["game_version"]
-        game_url = self.games_urls.get(game_name)
-        
-        if not game_url:
-            print(f"No download URL found for {game_name}")
-            if progress_callback:
-                progress_callback(100, f"Error: No download URL for {game_name}")
-            return False
-        
-        print(f"Starting download: {game_name} v{game_version}")
-        
-        # Check if already up to date
-        needs_update, current_version = self.needs_update(game_name, game_version)
-        if not needs_update:
-            print(f"Game {game_name} is already up to date (v{current_version})")
-            if progress_callback:
-                progress_callback(100, f"{game_name} is already up to date")
-            return True
-        
-        if current_version:
-            print(f"Updating from v{current_version} to v{game_version}")
-        
-        # Create temp directory for download
-        temp_dir = os.path.join(os.getcwd(), 'temp', game_name)
-        os.makedirs(temp_dir, exist_ok=True)
-        
-        # Define paths
-        zip_filename = f"{game_name}_{game_version}.zip"
-        zip_path = os.path.join(temp_dir, zip_filename)
-        game_folder = os.path.join(os.getcwd(), 'games', game_name)
-        
-        try:
-            # Download the game
-            if progress_callback:
-                progress_callback(0, f"Starting download: {game_name}")
+        if is_local == '--remote':
+            game_name = game_data["game_name"]
+            game_version = game_data["game_version"]
+            game_url = self.games_urls.get(game_name)
             
-            def download_progress(percent, downloaded, total):
+            if not game_url:
+                print(f"No download URL found for {game_name}")
                 if progress_callback:
-                    # Map to overall progress (0-50% for download)
-                    overall_percent = percent * 0.5
-                    progress_callback(overall_percent, f"Downloading: {percent:.1f}%")
-            
-            download_success = self.download_file(game_url, zip_path, download_progress)
-            
-            if not download_success:
-                print(f"Failed to download {game_name}")
-                if progress_callback:
-                    progress_callback(100, f"Failed to download {game_name}")
+                    progress_callback(100, f"Error: No download URL for {game_name}")
                 return False
             
-            # Extract the game
-            if progress_callback:
-                progress_callback(50, f"Extracting {game_name}...")
+            print(f"Starting download: {game_name} v{game_version}")
             
-            def extract_progress(current, total):
+            # Check if already up to date
+            needs_update, current_version = self.needs_update(game_name, game_version)
+            if not needs_update:
+                print(f"Game {game_name} is already up to date (v{current_version})")
                 if progress_callback:
-                    # Map to overall progress (50-100% for extraction)
-                    percent = (current / total) * 100
-                    overall_percent = 50 + (percent * 0.5)
-                    progress_callback(overall_percent, f"Extracting: {current}/{total} files")
+                    progress_callback(100, f"{game_name} is already up to date")
+                return True
             
-            # Remove old game folder if exists (for update)
-            if os.path.exists(game_folder):
-                shutil.rmtree(game_folder)
+            if current_version:
+                print(f"Updating from v{current_version} to v{game_version}")
             
-            extract_success = self.extract_zip(zip_path, game_folder, extract_progress)
+            # Create temp directory for download
+            temp_dir = os.path.join(os.path.dirname(__file__), 'temp', game_name)
+            os.makedirs(temp_dir, exist_ok=True)
             
-            if not extract_success:
-                print(f"Failed to extract {game_name}")
-                if progress_callback:
-                    progress_callback(100, f"Failed to extract {game_name}")
-                return False
+            # Define paths
+            zip_filename = f"{game_name}_{game_version}.zip"
+            zip_path = os.path.join(temp_dir, zip_filename)
+            game_folder = os.path.join(os.path.dirname(__file__), 'games', game_name)
             
-            # Create or update game.json with metadata
-            game_metadata = {
-                "name": game_name,
-                "version": game_version,
-                "author": game_data.get("game_author", ""),
-                "category": game_data.get("game_category", ""),
-                "tags": game_data.get("game_tags", []),
-                "description": game_data.get("game_description", ""),
-                "total_size": game_data.get("total_size", 0),
-                "total_files": game_data.get("total_files", 0),
-                "installed_date": self._get_current_date(),
-                "download_url": game_url
-            }
-            
-            metadata_path = os.path.join(game_folder, 'game.json')
-            with open(metadata_path, 'w') as f:
-                json.dump(game_metadata, f, indent=2)
-            
-            # Verify download
-            if progress_callback:
-                progress_callback(95, f"Verifying {game_name}...")
-            
-            if not self.verify_download(game_name, game_folder):
-                print(f"Verification failed for {game_name}")
-                if progress_callback:
-                    progress_callback(100, f"Verification failed for {game_name}")
-                return False
-            
-            # Update registry
-            self.installed_games["games"][game_name] = {
-                "version": game_version,
-                "installed_date": game_metadata["installed_date"],
-                "size": game_data.get("total_size", 0),
-                "files": game_data.get("total_files", 0),
-                "author": game_data.get("game_author", ""),
-                "category": game_data.get("game_category", ""),
-                "tags": game_data.get("game_tags", []),
-                "description": game_data.get("game_description", ""),
-                "path": game_folder
-            }
-            
-            self.save_installed_games()
-            
-            # Cleanup temp file
             try:
-                os.remove(zip_path)
-                os.rmdir(temp_dir)
-            except:
-                pass  # Ignore cleanup errors
-            
-            if progress_callback:
-                progress_callback(100, f"Successfully installed {game_name}")
-            
-            print(f"\n✓ Successfully installed {game_name} v{game_version}")
-            print(f"  Location: {game_folder}")
-            
-            return True
-            
-        except Exception as e:
-            print(f"\n✗ Error installing {game_name}: {e}")
-            # Cleanup on failure
-            if os.path.exists(game_folder):
-                shutil.rmtree(game_folder)
-            
-            if progress_callback:
-                progress_callback(100, f"Error: {str(e)[:50]}...")
-            
+                # Download the game
+                if progress_callback:
+                    progress_callback(0, f"Starting download: {game_name}")
+                
+                def download_progress(percent, downloaded, total):
+                    if progress_callback:
+                        # Map to overall progress (0-50% for download)
+                        overall_percent = percent * 0.5
+                        progress_callback(overall_percent, f"Downloading: {percent:.1f}%")
+                
+                download_success = self.download_file(game_url, zip_path, download_progress)
+                
+                if not download_success:
+                    print(f"Failed to download {game_name}")
+                    if progress_callback:
+                        progress_callback(100, f"Failed to download {game_name}")
+                    return False
+                
+                # Extract the game
+                if progress_callback:
+                    progress_callback(50, f"Extracting {game_name}...")
+                
+                def extract_progress(current, total):
+                    if progress_callback:
+                        # Map to overall progress (50-100% for extraction)
+                        percent = (current / total) * 100
+                        overall_percent = 50 + (percent * 0.5)
+                        progress_callback(overall_percent, f"Extracting: {current}/{total} files")
+                
+                # Remove old game folder if exists (for update)
+                if os.path.exists(game_folder):
+                    shutil.rmtree(game_folder)
+                
+                extract_success = self.extract_zip(zip_path, game_folder, extract_progress)
+                
+                if not extract_success:
+                    print(f"Failed to extract {game_name}")
+                    if progress_callback:
+                        progress_callback(100, f"Failed to extract {game_name}")
+                    return False
+                
+                # Create or update game.json with metadata
+                game_metadata = {
+                    "name": game_name,
+                    "version": game_version,
+                    "author": game_data.get("game_author", ""),
+                    "category": game_data.get("game_category", ""),
+                    "tags": game_data.get("game_tags", []),
+                    "description": game_data.get("game_description", ""),
+                    "total_size": game_data.get("total_size", 0),
+                    "total_files": game_data.get("total_files", 0),
+                    "installed_date": self._get_current_date(),
+                    "download_url": game_url
+                }
+                
+                metadata_path = os.path.join(game_folder, 'game.json')
+                with open(metadata_path, 'w') as f:
+                    json.dump(game_metadata, f, indent=2)
+                
+                # Verify download
+                if progress_callback:
+                    progress_callback(95, f"Verifying {game_name}...")
+                
+                if not self.verify_download(game_name, game_folder):
+                    print(f"Verification failed for {game_name}")
+                    if progress_callback:
+                        progress_callback(100, f"Verification failed for {game_name}")
+                    return False
+                
+                # Update registry
+                self.installed_games["games"][game_name] = {
+                    "version": game_version,
+                    "installed_date": game_metadata["installed_date"],
+                    "size": game_data.get("total_size", 0),
+                    "files": game_data.get("total_files", 0),
+                    "author": game_data.get("game_author", ""),
+                    "category": game_data.get("game_category", ""),
+                    "tags": game_data.get("game_tags", []),
+                    "description": game_data.get("game_description", ""),
+                    "path": game_folder
+                }
+                
+                self.save_installed_games()
+                
+                # Cleanup temp file
+                try:
+                    os.remove(zip_path)
+                    os.rmdir(temp_dir)
+                except:
+                    pass  # Ignore cleanup errors
+                
+                if progress_callback:
+                    progress_callback(100, f"Successfully installed {game_name}")
+                
+                print(f"\n✓ Successfully installed {game_name} v{game_version}")
+                print(f"  Location: {game_folder}")
+                
+                return True
+                
+            except Exception as e:
+                print(f"\n✗ Error installing {game_name}: {e}")
+                # Cleanup on failure
+                if os.path.exists(game_folder):
+                    shutil.rmtree(game_folder)
+                
+                if progress_callback:
+                    progress_callback(100, f"Error: {str(e)[:50]}...")
+                
+                return False
+        elif is_local == '--local':
+            # Get zip from ../games/
+            games_folder = os.path.join(os.path.dirname(__file__), '..', 'games')
+            if os.path.exists(games_folder):
+                if progress_callback: progress_callback(1, 'Locally installing game...')
+                game_zip = os.path.join(games_folder, game_data['game_compact_file'] + '.zip')
+                if os.path.exists(game_zip):
+                    if progress_callback: progress_callback(6, 'Locally installing game...')
+                    game_name = game_data['game_name']
+                    game_folder = os.path.join(os.path.dirname(__file__), 'games', game_name)
+                    game_version = game_data['game_version']
+                    print(f"Installing {game_name} from {game_zip}")
+                    
+                    # First 
+                    if os.path.exists(game_folder):
+                        shutil.rmtree(game_folder)
+                        
+                    # Extract the game
+                    if progress_callback:
+                        progress_callback(50, f"Extracting {game_name}...")
+                    
+                    def extract_progress(current, total):
+                        if progress_callback:
+                            # Map to overall progress (50-100% for extraction)
+                            percent = (current / total) * 100
+                            overall_percent = 50 + (percent * 0.5)
+                            progress_callback(overall_percent, f"Extracting: {current}/{total} files")
+                    
+                    extract_success = self.extract_zip(game_zip, game_folder, extract_progress)
+                    
+                    if not extract_success:
+                        print(f"Failed to extract {game_name}")
+                        if progress_callback:
+                            progress_callback(100, f"Failed to extract {game_name}")
+                        return False
+                    
+                    # Create or update game.json with metadata
+                    game_metadata = {
+                        "name": game_name,
+                        "version": game_version,
+                        "author": game_data.get("game_author", ""),
+                        "category": game_data.get("game_category", ""),
+                        "tags": game_data.get("game_tags", []),
+                        "description": game_data.get("game_description", ""),
+                        "total_size": game_data.get("total_size", 0),
+                        "total_files": game_data.get("total_files", 0),
+                        "installed_date": self._get_current_date(),
+                        "download_url": 'None'
+                    }
+                    
+                    metadata_path = os.path.join(game_folder, 'game.json')
+                    with open(metadata_path, 'w') as f:
+                        json.dump(game_metadata, f, indent=2)
+                    
+                    # Update registry
+                    self.installed_games["games"][game_name] = {
+                        "version": game_version,
+                        "installed_date": game_metadata["installed_date"],
+                        "size": game_data.get("total_size", 0),
+                        "files": game_data.get("total_files", 0),
+                        "author": game_data.get("game_author", ""),
+                        "category": game_data.get("game_category", ""),
+                        "tags": game_data.get("game_tags", []),
+                        "description": game_data.get("game_description", ""),
+                        "path": game_folder
+                    }
+                    
+                    self.save_installed_games()
+                    
+                    if progress_callback:
+                        progress_callback(100, f"Successfully installed {game_name}")
+                    
+                    print(f"\n✓ Successfully installed {game_name} v{game_version}")
+                    print(f"  Location: {game_folder}")
+                    
+                else:
+                    if progress_callback: progress_callback(100, f'Error: Game zip not found: {game_zip}')
+                    print(f"Error: Game zip not found: {game_zip}")
+            else:
+                if progress_callback: progress_callback(100, f'Error: Games folder not found: {games_folder}')
+                print(f"Error: Games folder not found: {games_folder}")
+                return False
+        else:
+            if progress_callback: progress_callback(100, f'Error: Invalid install type: {is_local}')
+            print(f"Error: Invalid install type: {is_local}")
             return False
     
     def _get_current_date(self) -> str:
@@ -366,7 +477,7 @@ class Downloader:
             print(f"Game {game_name} is not installed")
             return False
         
-        game_folder = os.path.join(os.getcwd(), 'games', game_name)
+        game_folder = os.path.join(os.path.dirname(__file__), 'games', game_name)
         
         # Remove game folder
         if os.path.exists(game_folder):
@@ -416,7 +527,7 @@ class Downloader:
     
     def cleanup_temp_files(self):
         """Clean up temporary files"""
-        temp_path = os.path.join(os.getcwd(), 'temp')
+        temp_path = os.path.join(os.path.dirname(__file__), 'temp')
         if os.path.exists(temp_path):
             try:
                 shutil.rmtree(temp_path)

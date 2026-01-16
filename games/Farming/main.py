@@ -791,7 +791,12 @@ class GameScene(Scene):
             renderer.draw_rect(100*data.ratio.x, 75*data.ratio.y, self.engine.width-(200*data.ratio.x), self.engine.height-(150*data.ratio.y), ThemeManager.get_color('background2'), anchor_point=(0.0, 0.0))
 
 def main():
-    engine = LunaEngine("Farming", 1280, 720, True)
+    fullscreen = False
+    if len(sys.argv) >= 2:
+        if sys.argv[1] == "--fullscreen":
+            fullscreen = True
+    
+    engine = LunaEngine("Farming", 1280, 720, fullscreen=fullscreen)
     pygame.display.set_icon(pygame.image.load(f"{os.path.dirname(__file__)}/assets/icon.png"))
     engine.initialize()
     

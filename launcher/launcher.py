@@ -1,24 +1,27 @@
-import os, sys, json, requests, shutil
+import os, sys, json, requests, shutil, threading, subprocess, time
 from typing import Literal, Optional, List, Dict, Set, Tuple
+from threading import Thread
 import customtkinter as tk
 from tkinter import messagebox
 from PIL import Image, ImageTk
 import io
 from downloader import Downloader
 
-run_mode: Literal['--local', '--remote'] = '--local'
+run_mode: Literal['--local', '--remote'] = '--remote'
 
 if len(sys.argv) >= 2:
     if sys.argv[1] in ['--local', '--remote']: 
         run_mode = sys.argv[1]
         
+this_path = os.path.dirname(__file__)
+        
 class Path:
-    fonts = os.path.join(os.getcwd(), 'assets', 'fonts')
-    icons = os.path.join(os.getcwd(), 'assets', 'icons')
-    games = os.path.join(os.getcwd(), 'games')
-    temp = os.path.join(os.getcwd(), 'temp')
-    cache = os.path.join(os.getcwd(), 'cache')
-    config = os.path.join(os.getcwd(), 'config')
+    fonts = os.path.join(this_path, 'assets', 'fonts')
+    icons = os.path.join(this_path, 'assets', 'icons')
+    games = os.path.join(this_path, 'games')
+    temp = os.path.join(this_path, 'temp')
+    cache = os.path.join(this_path, 'cache')
+    config = os.path.join(this_path, 'config')
     github = 'https://api.github.com/repos/MrJuaumBR/LunaEngine-Games/contents/games'
     data_remote = 'https://raw.githubusercontent.com/MrJuaumBR/LunaEngine-Games/refs/heads/main/games/data.json'
     
@@ -373,13 +376,25 @@ class ResponsiveGameCard(tk.CTkFrame):
         title_frame = tk.CTkFrame(main_frame, fg_color="transparent", height=30)
         title_frame.pack(fill="x", pady=(0, 8))
         
+        # Image/Logo
+        if self.game_data['game_icon'] is not None:
+            icon_file = self.downloader.get_game_icon(self.game_data, is_local=run_mode)
+            if icon_file:
+                icon = tk.CTkImage(Image.open(icon_file), Image.open(icon_file), size=(64,64))
+                if icon:
+                    icon_label = tk.CTkLabel(title_frame, image=icon, text="")
+                    icon_label.image = icon
+                    icon_label.pack(side="left", padx=(0, 5))
+        
         # Title
         title_label = tk.CTkLabel(title_frame, 
                                  text=self.game_data["game_name"], 
                                  font=("RobotoSerif", 16, "bold"),
                                  text_color=self.theme['text_primary'],
                                  anchor="w")
-        title_label.pack(side="left", fill="x", expand=True)
+        title_label.pack(side="left", fill="x", expand=False)
+        
+        
         
         # Version with update indicator
         version_text = f"v{self.game_data['game_version']}"
@@ -495,7 +510,6 @@ class ResponsiveGameCard(tk.CTkFrame):
         """Create action buttons based on installation status"""
         button_frame = tk.CTkFrame(parent, fg_color="transparent")
         button_frame.pack(fill="x")
-        
         if self.install_status['installed']:
             needs_update, current_version = self.downloader.needs_update(
                 self.game_data['game_name'], 
@@ -614,7 +628,8 @@ class ResponsiveGameCard(tk.CTkFrame):
                 messagebox.showwarning("Game already open", "A game is already open. Please close the currently open game before playing another one.")
                 return
             else:
-                self.mom.game_open = True
+                # Start the game
+                self.mom.start_game(self.game_data['game_name'])
             
             
     
@@ -738,9 +753,10 @@ class App(tk.CTk):
     game_open: bool = False
     game_open_name: str = ""
     game_open_thread: Thread = None
+    game_process: subprocess.Popen = None
     def __init__(self):
         super().__init__()
-        
+        self.ensure_correct_directory()
         # Set appearance
         theme_preference = self.load_theme_preference()
         self.current_theme = theme_preference
@@ -782,53 +798,85 @@ class App(tk.CTk):
         self.all_authors = set()
         self.all_categories = set()
         
+        self.load_settings()
+        
         # Create UI FIRST
         self.create_menu()
         self.create_progress_display()
         
         # Now load initial data and populate UI
         self.load_initial_data()
+        
+        # Game Monitoring
+        self.monitor_thread = None
+        self.game_monitoring = False
     
     def get_game_data(self):
         """Load game data from local or remote"""
-        if run_mode == '--local':
-            possible_paths = [
-                os.path.join(Path.games, 'data.json'),
-                os.path.join(os.getcwd(), 'data.json'),
-                os.path.join(os.path.dirname(os.getcwd()), 'games', 'data.json')
-            ]
-            
-            data_loaded = False
-            for data_path in possible_paths:
-                if os.path.exists(data_path):
-                    try:
-                        with open(data_path, 'r', encoding='utf-8') as f:
+        original_dir = os.path.dirname(__file__)  # Save current directory
+        
+        try:
+            if run_mode == '--local':
+                # Use absolute paths instead of relative ones
+                possible_paths = [
+                    os.path.join(original_dir, 'games', 'data.json'),
+                    os.path.join(original_dir, 'data.json'),
+                    os.path.join(original_dir, '..', 'games', 'data.json')
+                ]
+                
+                data_loaded = False
+                for data_path in possible_paths:
+                    if os.path.exists(data_path):
+                        try:
+                            with open(data_path, 'r', encoding='utf-8') as f:
+                                self.game_data = json.load(f)
+                            print(f"Loaded data from: {data_path}")
+                            data_loaded = True
+                            break
+                        except Exception as e:
+                            print(f"Error loading {data_path}: {e}")
+                
+                if not data_loaded:
+                    print("Warning: Could not find data.json in local mode")
+                    self.game_data = {
+                        "info": {"version": "0.0.0", "author": "Unknown", "total_games": 0},
+                        "games": []
+                    }
+            else:
+                try:
+                    print(f"Loading remote data from: {Path.data_remote}")
+                    response = requests.get(Path.data_remote, timeout=10)
+                    response.raise_for_status()
+                    self.game_data = response.json()
+                    print(f"Successfully loaded remote data")
+                except Exception as e:
+                    print(f"Error loading remote data: {e}")
+                    # Fallback to local data if remote fails
+                    local_path = os.path.join(original_dir, 'games', 'data.json')
+                    if os.path.exists(local_path):
+                        with open(local_path, 'r', encoding='utf-8') as f:
                             self.game_data = json.load(f)
-                        print(f"Loaded data from: {data_path}")
-                        data_loaded = True
-                        break
-                    except Exception as e:
-                        print(f"Error loading {data_path}: {e}")
-            
-            if not data_loaded:
-                print("Warning: Could not find data.json in local mode")
-                self.game_data = {
-                    "info": {"version": "0.0.0", "author": "Unknown", "total_games": 0},
-                    "games": []
-                }
-        else:
-            try:
-                print(f"Loading remote data from: {Path.data_remote}")
-                response = requests.get(Path.data_remote, timeout=10)
-                response.raise_for_status()
-                self.game_data = response.json()
-                print(f"Successfully loaded remote data")
-            except Exception as e:
-                print(f"Error loading remote data: {e}")
-                self.game_data = {
-                    "info": {"version": "0.0.0", "author": "Unknown", "total_games": 0},
-                    "games": []
-                }
+                        print(f"Fell back to local data: {local_path}")
+                    else:
+                        self.game_data = {
+                            "info": {"version": "0.0.0", "author": "Unknown", "total_games": 0},
+                            "games": []
+                        }
+        finally:
+            # Ensure we're back in the original directory
+            if this_path != original_dir:
+                os.chdir(original_dir)
+        
+    def ensure_correct_directory(self):
+        """Ensure we're in the correct launcher directory"""
+        expected_dir = os.path.dirname(os.path.abspath(__file__))
+        current_dir = os.getcwd()
+        
+        if current_dir != expected_dir:
+            print(f"Correcting directory: {current_dir} -> {expected_dir}")
+            os.chdir(expected_dir)
+            return True
+        return False
     
     def load_initial_data(self):
         """Load data and populate UI after creation"""
@@ -1036,20 +1084,35 @@ class App(tk.CTk):
         # Refresh display
         self.apply_filters()
 
+    def load_settings(self):
+        config_path = os.path.join(Path.config, 'settings.json')
+        self.settings = {}
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                self.settings = json.load(f)
+        else:
+            self.settings['theme'] = 'dark'
+            self.settings['games_fullscreen'] = True
+            with open(config_path, 'w') as f:
+                json.dump(self.settings, f)
+                f.close()
+
+    def save_settings(self, *args, **kwargs):
+        config_path = os.path.join(Path.config, 'settings.json')
+        if not os.path.exists(config_path):
+            self.load_settings()
+        with open(config_path, 'w') as f:
+            json.dump(self.settings, f)
+            f.close()
+
     def save_theme_preference(self, theme_name: str):
         """Save theme preference to config file"""
         try:
-            config_path = os.path.join(Path.config, 'settings.json')
-            settings = {}
+            if self.settings is None:
+                self.load_settings()
+            self.settings['theme'] = theme_name
             
-            if os.path.exists(config_path):
-                with open(config_path, 'r') as f:
-                    settings = json.load(f)
-            
-            settings['theme'] = theme_name
-            
-            with open(config_path, 'w') as f:
-                json.dump(settings, f, indent=2)
+            self.save_settings()
                 
             print(f"Theme preference saved: {theme_name}")
         except Exception as e:
@@ -1058,12 +1121,9 @@ class App(tk.CTk):
     def load_theme_preference(self):
         """Load theme preference from config file"""
         try:
-            config_path = os.path.join(Path.config, 'settings.json')
-            if os.path.exists(config_path):
-                with open(config_path, 'r') as f:
-                    settings = json.load(f)
-                    theme = settings.get('theme', 'dark')
-                    return theme
+            if self.settings is None:
+                self.load_settings()
+            return self.settings['theme']
         except:
             pass
         return 'dark'
@@ -1161,10 +1221,6 @@ class App(tk.CTk):
                                          border_width=1,
                                          border_color=self.theme_config['card_border'])
         
-        # Place in grid at row 1 (below the main content at row 0)
-        self.progress_frame.grid(row=1, column=0, columnspan=2, sticky="ew", padx=10, pady=(0, 10))
-        self.progress_frame.grid_propagate(False)
-        
         # Initially hidden
         self.progress_frame.grid_remove()
         
@@ -1216,7 +1272,7 @@ class App(tk.CTk):
         item = self.download_queue[0]
         self.current_download = item
         
-        # Show progress frame
+        # Show progress frame with proper positioning
         self.show_progress()
         
         # Update display
@@ -1232,14 +1288,24 @@ class App(tk.CTk):
         def progress_callback(percent, status):
             self.on_download_progress(item['game']['game_name'], percent, status)
         
-        # Start the download
-        self.downloader.download_game(
-            item['game'], 
-            progress_callback=progress_callback
+        # Start the download in a separate thread
+        thread = Thread(
+            target=lambda: self.downloader.download_game(
+                item['game'], 
+                progress_callback=progress_callback,
+                is_local = run_mode
+            ),
+            daemon=True
         )
+        thread.start()
     
     def on_download_progress(self, game_name, percent, status):
         """Handle download progress updates"""
+        # This must run in the main thread
+        self.after(0, self._update_progress_ui, game_name, percent, status)
+    
+    def _update_progress_ui(self, game_name, percent, status):
+        """Update progress UI in the main thread"""
         if self.current_download and self.current_download['game']['game_name'] == game_name:
             self.progress_bar.set(percent / 100)
             self.current_download['progress'] = percent
@@ -1262,6 +1328,7 @@ class App(tk.CTk):
                 self.current_download = None
                 self.process_download_queue()
                 
+                # Refresh UI
                 self.get_game_data()
                 self.downloader.games_data = self.game_data
                 self.extract_filter_data()
@@ -1269,8 +1336,14 @@ class App(tk.CTk):
                 self.apply_filters()
     
     def show_progress(self):
-        """Show progress display"""
-        self.progress_frame.grid()
+        """Show progress display with correct positioning"""
+        if self.game_open:
+            # If game is open, show at row 2 (below game status)
+            self.progress_frame.grid(row=2, column=0, columnspan=2, sticky="ew", padx=10, pady=(0, 10))
+        else:
+            # If no game is open, show at row 1
+            self.progress_frame.grid(row=1, column=0, columnspan=2, sticky="ew", padx=10, pady=(0, 10))
+        self.progress_frame.grid_propagate(False)
     
     def hide_progress(self):
         """Hide progress display"""
@@ -1303,10 +1376,11 @@ class App(tk.CTk):
         self.main_container = tk.CTkFrame(self, fg_color=self.theme_config['bg'])
         self.main_container.pack(fill="both", expand=True, padx=10, pady=10)
         
-        # Configure grid
+        # Configure grid - 3 rows now to accommodate game status
         self.main_container.grid_columnconfigure(1, weight=1)
-        self.main_container.grid_rowconfigure(0, weight=1)
-        self.main_container.grid_rowconfigure(1, weight=0)
+        self.main_container.grid_rowconfigure(0, weight=1)  # Main content
+        self.main_container.grid_rowconfigure(1, weight=0)  # Game status (optional)
+        self.main_container.grid_rowconfigure(2, weight=0)  # Progress bar (optional)
         
         # Sidebar (Filters)
         self.sidebar = tk.CTkFrame(self.main_container,
@@ -1516,7 +1590,299 @@ class App(tk.CTk):
                                         font=("RobotoSerif", 16),
                                         text_color=self.theme_config['text_secondary'])
         self.loading_label.pack(pady=100)
+
+    def start_game(self, game_name: str):
+        """Start a game in a separate thread"""
+        try:
+            # Get game info
+            game_info = None
+            for game in self.game_data.get('games', []):
+                if game['game_name'] == game_name:
+                    game_info = game
+                    break
+            
+            if not game_info:
+                messagebox.showerror("Error", f"Game '{game_name}' not found")
+                return
+            
+            # Check if game is installed
+            if not self.downloader.is_game_installed(game_name):
+                messagebox.showwarning("Game not installed", f"Please install '{game_name}' before playing")
+                return
+            
+            # Get game path - use absolute paths
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            game_folder = os.path.join(base_dir, 'games', game_name)
+            
+            # Clean the path
+            game_folder = os.path.normpath(game_folder)
+            
+            # Check if game folder exists
+            if not os.path.exists(game_folder):
+                messagebox.showerror("Error", f"Game folder not found: {game_folder}")
+                return
+            
+            # Find the main file
+            main_file = game_info.get('game_main_file', 'main.py')
+            game_path = os.path.join(game_folder, main_file)
+            
+            # If main.py doesn't exist, look for any Python file
+            if not os.path.exists(game_path):
+                python_files = [f for f in os.listdir(game_folder) if f.endswith('.py') and f != 'game.json']
+                if python_files:
+                    game_path = os.path.join(game_folder, python_files[0])
+                else:
+                    messagebox.showerror("Error", f"No Python files found in game folder: {game_folder}")
+                    return
+            
+            # Verify the game path
+            if not os.path.exists(game_path):
+                messagebox.showerror("Error", f"Game executable not found: {game_path}")
+                return
+            
+            print(f"Game folder: {game_folder}")
+            print(f"Game path: {game_path}")
+            print(f"Folder exists: {os.path.exists(game_folder)}")
+            print(f"Path exists: {os.path.exists(game_path)}")
+            
+            # Start game in a separate thread
+            self.game_open = True
+            self.game_open_name = game_name
+            
+            # Create and start thread
+            self.game_open_thread = Thread(
+                target=self._run_game_thread,
+                args=(game_name, game_path, game_folder),
+                daemon=True
+            )
+            self.game_open_thread.start()
+            
+            # Start monitoring thread
+            self.start_game_monitoring()
+            
+            # Show game status
+            self.show_game_status()
+            
+            print(f"Started game thread for: {game_name}")
+            
+        except Exception as e:
+            print(f"Error starting game: {e}")
+            import traceback
+            traceback.print_exc()
+            messagebox.showerror("Error", f"Failed to start game: {str(e)}")
+            self.game_open = False
+            self.game_open_name = ""
+
+    def _run_game_thread(self, game_name: str, game_path: str, game_folder: str):
+        """Thread function to run the game"""
+        original_dir = os.path.dirname(os.path.abspath(__file__))
         
+        try:
+            print(f"Launching game: {game_name}")
+            print(f"Game path: {game_path}")
+            print(f"Game folder: {game_folder}")
+            
+            # Change to game directory
+            os.chdir(game_folder)
+            
+            # Run the game using subprocess
+            self.game_process = subprocess.Popen(
+                [sys.executable, game_path, ('--fullscreen' if self.settings['games_fullscreen'] else '--windowed')],
+                cwd=game_folder,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                bufsize=1,
+                universal_newlines=True
+            )
+            
+            # Read output in real-time
+            def read_output(pipe, output_type):
+                for line in iter(pipe.readline, ''):
+                    if line.strip():
+                        print(f"[{game_name} {output_type}]: {line.strip()}")
+                pipe.close()
+            
+            # Create threads to read stdout and stderr
+            stdout_thread = Thread(target=read_output, args=(self.game_process.stdout, "stdout"))
+            stderr_thread = Thread(target=read_output, args=(self.game_process.stderr, "stderr"))
+            
+            stdout_thread.daemon = True
+            stderr_thread.daemon = True
+            
+            stdout_thread.start()
+            stderr_thread.start()
+            
+            # Wait for process to complete
+            return_code = self.game_process.wait()
+            
+            print(f"Game '{game_name}' exited with code: {return_code}")
+            
+        except Exception as e:
+            print(f"Error in game thread: {e}")
+            import traceback
+            traceback.print_exc()
+            return_code = -1
+        finally:
+            # ALWAYS restore to the launcher directory
+            try:
+                os.chdir(original_dir)
+                print(f"Restored to launcher directory: {original_dir}")
+            except Exception as e:
+                print(f"Error restoring directory: {e}")
+                # Try to get back to a safe directory
+                try:
+                    os.chdir(os.path.expanduser("~"))
+                except:
+                    pass
+            
+            # Reset game state in main thread
+            self.after(0, self._game_ended, game_name, return_code)
+
+    def _game_ended(self, game_name: str, return_code: int):
+        """Called when game ends"""
+        # Ensure we're in the correct launcher directory
+        try:
+            launcher_dir = os.path.dirname(os.path.abspath(__file__))
+            if os.getcwd() != launcher_dir:
+                os.chdir(launcher_dir)
+                print(f"Corrected directory to launcher: {launcher_dir}")
+        except Exception as e:
+            print(f"Error correcting directory: {e}")
+        
+        # Reset game state
+        self.game_open = False
+        self.game_open_name = ""
+        self.game_open_thread = None
+        self.game_process = None
+        
+        # Hide game status
+        if hasattr(self, 'game_status_frame'):
+            self.game_status_frame.grid_remove()
+        
+        # Update progress frame position if it's visible
+        if hasattr(self, 'progress_frame') and self.progress_frame.winfo_viewable():
+            self.show_progress()  # This will reposition it correctly
+        
+        print(f"Game '{game_name}' closed. Current directory: {os.getcwd()}")
+        print(f"Run mode: {run_mode}")
+        
+        # Refresh UI to update game cards
+        self.refresh_games()
+
+    def start_game_monitoring(self):
+        """Start a thread to monitor game status"""
+        if self.game_monitoring:
+            return
+        
+        self.game_monitoring = True
+        self.monitor_thread = Thread(target=self._monitor_games, daemon=True)
+        self.monitor_thread.start()
+
+    def _monitor_games(self):
+        """Monitor game processes"""
+        while self.game_monitoring:
+            if self.game_open and self.game_process:
+                # Check if process is still running
+                if self.game_process.poll() is not None:
+                    # Process has ended
+                    self.after(0, self._game_ended, self.game_open_name, self.game_process.returncode)
+            
+            time.sleep(1)  # Check every second
+
+    def stop_game_monitoring(self):
+        """Stop the game monitoring thread"""
+        self.game_monitoring = False
+        if self.monitor_thread:
+            self.monitor_thread.join(timeout=2)
+            self.monitor_thread = None
+
+    def kill_game(self):
+        """Forcefully stop the running game"""
+        if not self.game_open or not self.game_process:
+            return
+        
+        try:
+            print(f"Attempting to kill game: {self.game_open_name}")
+            
+            # Try to terminate gracefully first
+            self.game_process.terminate()
+            
+            # Wait a bit
+            time.sleep(2)
+            
+            # If still running, kill it
+            if self.game_process.poll() is None:
+                self.game_process.kill()
+                print(f"Game '{self.game_open_name}' forcefully killed")
+            
+            # Clean up
+            self._game_ended(self.game_open_name, 0)
+            
+        except Exception as e:
+            print(f"Error killing game: {e}")
+
+    def show_game_status(self):
+        """Show game status bar"""
+        if not hasattr(self, 'game_status_frame'):
+            # Create game status frame
+            self.game_status_frame = tk.CTkFrame(
+                self.main_container,
+                height=50,
+                fg_color=self.theme_config['card_bg'],
+                border_width=1,
+                border_color=self.theme_config['card_border']
+            )
+            self.game_status_frame.grid(row=1, column=0, columnspan=2, sticky="ew", padx=10, pady=(0, 10))
+            self.game_status_frame.grid_propagate(False)
+            
+            # Status content
+            self.game_status_label = tk.CTkLabel(
+                self.game_status_frame,
+                text="",
+                font=("RobotoSerif", 12, "bold"),
+                text_color=self.theme_config['text_primary']
+            )
+            self.game_status_label.pack(side="left", padx=20, pady=15)
+            
+            # Kill game button
+            self.kill_game_btn = tk.CTkButton(
+                self.game_status_frame,
+                text="Stop Game",
+                fg_color=self.theme_config['danger'],
+                hover_color="#ff5252",
+                font=("RobotoMono", 11),
+                height=30,
+                width=100,
+                command=self.kill_game
+            )
+            self.kill_game_btn.pack(side="right", padx=20, pady=10)
+        
+        # Update status text
+        self.game_status_label.configure(
+            text=f"🎮 Playing: {self.game_open_name}"
+        )
+        
+        # Show the frame (at row 1)
+        self.game_status_frame.grid(row=1, column=0, columnspan=2, sticky="ew", padx=10, pady=(0, 10))
+        
+        # Update progress frame position if it's visible
+        if hasattr(self, 'progress_frame') and self.progress_frame.winfo_viewable():
+            self.show_progress()  # This will move it to row 2
+
+    def hide_game_status(self):
+        """Hide game status bar"""
+        if hasattr(self, 'game_status_frame'):
+            self.game_status_frame.grid_remove()
+        
+        # Update progress frame position if it's visible
+        if hasattr(self, 'progress_frame') and self.progress_frame.winfo_viewable():
+            self.show_progress()  # This will move it back to row 1       
+
+    def update_fullscreen(self, *args):
+        self.settings['games_fullscreen'] = self.start_fullscreen_var.get()
+        self.save_settings()
+
     def show_settings(self):
         """Show settings dialog"""
         settings_dialog = tk.CTkToplevel(self)
@@ -1537,6 +1903,21 @@ class App(tk.CTk):
         scroll_frame = tk.CTkScrollableFrame(settings_dialog, 
                                             fg_color=self.theme_config['bg'])
         scroll_frame.pack(fill="both", expand=True, padx=20, pady=(0, 20))
+        
+        # Start Games in Fullscreen checkbox
+        self.start_fullscreen_var = tk.BooleanVar(value=self.settings['games_fullscreen'])
+        self.start_fullscreen_var.trace_add("write", self.update_fullscreen)
+        self.start_fullscreen_checkbox = tk.CTkCheckBox(scroll_frame,
+                                                        text="Start Games in Fullscreen",
+                                                        variable=self.start_fullscreen_var,
+                                                        onvalue=True,
+                                                        offvalue=False,
+                                                        text_color=self.theme_config['text_primary'],
+                                                        fg_color=self.theme_config['card_bg'],
+                                                        border_color=self.theme_config['card_border'],
+                                                        border_width=1,
+                                                        corner_radius=8)
+        self.start_fullscreen_checkbox.pack(anchor="w", pady=(0, 10))
         
         # Theme Selection
         tk.CTkLabel(scroll_frame,
@@ -1666,7 +2047,7 @@ class App(tk.CTk):
     def clear_cache(self, parent_window=None):
         """Clear the cache directory"""
         try:
-            cache_path = os.path.join(os.getcwd(), 'cache')
+            cache_path = os.path.join(this_path, 'cache')
             if os.path.exists(cache_path):
                 shutil.rmtree(cache_path)
                 os.makedirs(cache_path)
@@ -1691,7 +2072,7 @@ class App(tk.CTk):
     def clear_temp_files(self, parent_window=None):
         """Clear temporary files"""
         try:
-            temp_path = os.path.join(os.getcwd(), 'temp')
+            temp_path = os.path.join(this_path, 'temp')
             if os.path.exists(temp_path):
                 shutil.rmtree(temp_path)
                 os.makedirs(temp_path)
@@ -1763,7 +2144,25 @@ class App(tk.CTk):
                             text_color=self.theme_config['text_secondary'])
         
         self.apply_filters()
+        
+    def __del__(self):
+        """Cleanup when app closes"""
+        self.stop_game_monitoring()
+        
+        # Kill any running game
+        if self.game_open and self.game_process:
+            try:
+                self.game_process.terminate()
+                time.sleep(1)
+                if self.game_process.poll() is None:
+                    self.game_process.kill()
+            except:
+                pass
 
 if __name__ == '__main__':
     app = App()
+    try:
+        app.iconbitmap(os.path.join(os.path.dirname(__file__),'assets','icons', 'launcher.ico'))
+    except Exception as e: print(e)
+    
     app.mainloop()

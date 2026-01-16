@@ -324,7 +324,6 @@ class NameInputScene(Scene):
     
     def update(self, dt):
         self.ratio = ResponsiveUI.get_ratio(self.engine)
-        self.name_input.update(dt)
     
     def render(self, renderer: Renderer):
         renderer.fill_screen(ThemeManager.get_color('background'))
@@ -584,7 +583,11 @@ class InGameScene(Scene):
 
 def main():
     try:
-        engine = LunaEngine("Snake Game", 1024, 720)
+        fullscreen = False
+        if len(sys.argv) >= 2:
+            if sys.argv[1] == "--fullscreen":
+                fullscreen = True
+        engine = LunaEngine("Snake Game", 1024, 720, fullscreen=fullscreen)
         pygame.display.set_icon(pygame.image.load(f"{os.path.dirname(__file__)}/icon.png"))
         engine.initialize()
         
