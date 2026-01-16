@@ -1,5 +1,0 @@
-requests
-customtkinter
-pillow
-
-# And the games dependancies may variate

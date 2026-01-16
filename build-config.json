@@ -64,6 +64,18 @@
   {
    "optionDest": "datas",
    "value": "C:/Users/MrPot/OneDrive/Documentos/Projects/LunaEngine-Games/launcher/downloader.py;."
+  },
+  {
+   "optionDest": "datas",
+   "value": "C:/Users/MrPot/OneDrive/Documentos/Projects/LunaEngine-Games/launcher/python;python/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "C:/Users/MrPot/OneDrive/Documentos/Projects/LunaEngine-Games/launcher/assets/icons;icons/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "C:/Users/MrPot/OneDrive/Documentos/Projects/LunaEngine-Games/launcher/assets/fonts;fonts/"
   }
  ],
  "nonPyinstallerOptions": {

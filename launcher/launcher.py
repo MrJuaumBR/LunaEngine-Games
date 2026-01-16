@@ -1675,7 +1675,7 @@ class App(tk.CTk):
 
     def _run_game_thread(self, game_name: str, game_path: str, game_folder: str):
         """Thread function to run the game"""
-        original_dir = os.path.dirname(os.path.abspath(os.path.abspath(sys.argv[0])))
+        original_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
         
         try:
             print(f"Launching game: {game_name}")
@@ -1685,15 +1685,130 @@ class App(tk.CTk):
             # Change to game directory
             os.chdir(game_folder)
             
+            # Check if we're running as an EXE or as a Python script
+            is_exe = getattr(sys, 'frozen', False)
+            
+            # Get the launcher directory
+            launcher_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+            
+            # Strategy: We need to find a Python interpreter that can run the game
+            # 1. First, try to use a bundled Python interpreter (if we distributed one with the launcher)
+            # 2. Then, try to use the system Python interpreter
+            # 3. Finally, show an error if neither is available
+            
+            python_exe = None
+            
+            if is_exe:
+                print("Running as an EXE - need to find Python interpreter")
+                
+                # Method 1: Look for a bundled Python interpreter
+                # This would be in a 'python' folder next to the launcher EXE
+                bundled_python_paths = [
+                    os.path.join(launcher_dir, 'python', 'pythonw.exe'),
+                    os.path.join(launcher_dir, 'python', 'python.exe'),
+                    os.path.join(os.path.dirname(sys.executable), 'python', 'pythonw.exe'),
+                    os.path.join(os.path.dirname(sys.executable), 'python', 'python.exe'),
+                ]
+                
+                for python_path in bundled_python_paths:
+                    if os.path.exists(python_path):
+                        python_exe = python_path
+                        print(f"Found bundled Python at: {python_exe}")
+                        break
+                
+                # Method 2: Try to find system Python
+                if not python_exe:
+                    print("No bundled Python found, trying system Python...")
+                    
+                    # On Windows, try pythonw.exe first (no console window)
+                    if sys.platform == 'win32':
+                        system_paths = ['pythonw.exe', 'python.exe']
+                    else:
+                        system_paths = ['python3', 'python']
+                    
+                    for python_cmd in system_paths:
+                        try:
+                            # Check if this Python command exists by running a simple command
+                            result = subprocess.run(
+                                [python_cmd, '--version'],
+                                capture_output=True,
+                                timeout=2,
+                                shell=True
+                            )
+                            if result.returncode == 0 or result.returncode == 1:
+                                python_exe = python_cmd
+                                print(f"Found system Python: {python_exe}")
+                                break
+                        except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+                            continue
+                    
+                    # Method 3: Try using 'py' launcher on Windows
+                    if not python_exe and sys.platform == 'win32':
+                        try:
+                            result = subprocess.run(
+                                ['py', '--version'],
+                                capture_output=True,
+                                timeout=2,
+                                shell=True
+                            )
+                            if result.returncode == 0 or result.returncode == 1:
+                                python_exe = 'py'
+                                print(f"Found py launcher: {python_exe}")
+                        except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+                            pass
+                
+                if not python_exe:
+                    # No Python interpreter found
+                    print("ERROR: No Python interpreter found!")
+                    print("To run games, you need:")
+                    print("1. Python installed and in PATH, OR")
+                    print("2. A bundled Python distribution in a 'python' folder next to the launcher")
+                    
+                    # Show error message in main thread
+                    self.after(0, lambda: messagebox.showerror(
+                        "Python Not Found",
+                        f"Could not find Python interpreter to run '{game_name}'.\n\n"
+                        "Please ensure Python is installed and available in your PATH, "
+                        "or contact the launcher developer for a version with bundled Python."
+                    ))
+                    self.after(0, self._game_ended, game_name, -1)
+                    return
+            
+            else:
+                # Running as a Python script - use current interpreter
+                print("Running as Python script")
+                python_exe = sys.executable
+            
+            # Build the command to run the game
+            # If using the 'py' launcher on Windows, we need to pass -3 flag for Python 3
+            if python_exe == 'py':
+                cmd = [python_exe, '-3', game_path]
+            else:
+                cmd = [python_exe, game_path]
+            
+            # Add fullscreen/windowed flag if the game supports it
+            # (You might need to adjust this based on how your games handle arguments)
+            if self.settings.get('games_fullscreen', True):
+                cmd.append('--fullscreen')
+            else:
+                cmd.append('--windowed')
+            
+            print(f"Running command: {' '.join(cmd)}")
+            print(f"In directory: {game_folder}")
+            
+            # Check if we need to use shell=True for system Python commands
+            use_shell = not is_exe or python_exe in ['pythonw.exe', 'python.exe', 'python3', 'python', 'py']
+            
             # Run the game using subprocess
             self.game_process = subprocess.Popen(
-                [sys.executable, game_path, ('--fullscreen' if self.settings['games_fullscreen'] else '--windowed')],
+                cmd,
                 cwd=game_folder,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
                 bufsize=1,
-                universal_newlines=True
+                universal_newlines=True,
+                shell=use_shell
             )
             
             # Read output in real-time
@@ -1738,7 +1853,7 @@ class App(tk.CTk):
             
             # Reset game state in main thread
             self.after(0, self._game_ended, game_name, return_code)
-
+    
     def _game_ended(self, game_name: str, return_code: int):
         """Called when game ends"""
         # Ensure we're in the correct launcher directory

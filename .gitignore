@@ -1,6 +1,6 @@
-temp
-cache
-config
+/launcher/temp
+/launcher/cache
+/launcher/config
 /launcher/games
 # Byte-compiled / optimized / DLL files
 __pycache__/

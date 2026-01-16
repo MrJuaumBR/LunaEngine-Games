@@ -1,3 +1,21 @@
 {
-  "games": {}
+  "games": {
+    "2048": {
+      "version": "0.0.1",
+      "installed_date": "2026-01-16",
+      "size": 0.03593158721923828,
+      "files": 3,
+      "author": "MrJuaumBR",
+      "category": "game",
+      "tags": [
+        "cozy",
+        "simple",
+        "arcade",
+        "math",
+        "puzzle"
+      ],
+      "description": "This game is the game of the math, 2, 4, 8, 16, 32, 64, ...",
+      "path": "C:\\Users\\MrPot\\OneDrive\\Documentos\\Projects\\LunaEngine-Games\\launcher\\games\\2048"
+    }
+  }
 }
