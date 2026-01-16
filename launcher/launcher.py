@@ -13,7 +13,7 @@ if len(sys.argv) >= 2:
     if sys.argv[1] in ['--local', '--remote']: 
         run_mode = sys.argv[1]
         
-this_path = os.path.dirname(__file__)
+this_path = os.path.dirname(os.path.abspath(sys.argv[0]))
         
 class Path:
     fonts = os.path.join(this_path, 'assets', 'fonts')
@@ -813,7 +813,7 @@ class App(tk.CTk):
     
     def get_game_data(self):
         """Load game data from local or remote"""
-        original_dir = os.path.dirname(__file__)  # Save current directory
+        original_dir = os.path.dirname(os.path.abspath(sys.argv[0]))  # Save current directory
         
         try:
             if run_mode == '--local':
@@ -869,7 +869,7 @@ class App(tk.CTk):
         
     def ensure_correct_directory(self):
         """Ensure we're in the correct launcher directory"""
-        expected_dir = os.path.dirname(os.path.abspath(__file__))
+        expected_dir = os.path.dirname(os.path.abspath(os.path.abspath(sys.argv[0])))
         current_dir = os.getcwd()
         
         if current_dir != expected_dir:
@@ -1611,7 +1611,7 @@ class App(tk.CTk):
                 return
             
             # Get game path - use absolute paths
-            base_dir = os.path.dirname(os.path.abspath(__file__))
+            base_dir = os.path.dirname(os.path.abspath(os.path.abspath(sys.argv[0])))
             game_folder = os.path.join(base_dir, 'games', game_name)
             
             # Clean the path
@@ -1675,7 +1675,7 @@ class App(tk.CTk):
 
     def _run_game_thread(self, game_name: str, game_path: str, game_folder: str):
         """Thread function to run the game"""
-        original_dir = os.path.dirname(os.path.abspath(__file__))
+        original_dir = os.path.dirname(os.path.abspath(os.path.abspath(sys.argv[0])))
         
         try:
             print(f"Launching game: {game_name}")
@@ -1743,7 +1743,7 @@ class App(tk.CTk):
         """Called when game ends"""
         # Ensure we're in the correct launcher directory
         try:
-            launcher_dir = os.path.dirname(os.path.abspath(__file__))
+            launcher_dir = os.path.dirname(os.path.abspath(os.path.abspath(sys.argv[0])))
             if os.getcwd() != launcher_dir:
                 os.chdir(launcher_dir)
                 print(f"Corrected directory to launcher: {launcher_dir}")
@@ -2162,7 +2162,7 @@ class App(tk.CTk):
 if __name__ == '__main__':
     app = App()
     try:
-        app.iconbitmap(os.path.join(os.path.dirname(__file__),'assets','icons', 'launcher.ico'))
+        app.iconbitmap(os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])),'assets','icons', 'launcher.ico'))
     except Exception as e: print(e)
     
     app.mainloop()

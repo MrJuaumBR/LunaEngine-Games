@@ -14,7 +14,7 @@ class Downloader:
         
     def check_files(self):
         """Create necessary directories"""
-        base_path = os.path.dirname(__file__)
+        base_path = os.path.dirname(os.path.abspath(sys.argv[0]))
         
         required_dirs = [
             'games',
@@ -38,7 +38,7 @@ class Downloader:
     
     def load_installed_games(self) -> Dict:
         """Load installed games registry"""
-        registry_path = os.path.join(os.path.dirname(__file__), 'config', 'installed_games.json')
+        registry_path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'config', 'installed_games.json')
         try:
             with open(registry_path, 'r') as f:
                 return json.load(f)
@@ -47,7 +47,7 @@ class Downloader:
     
     def save_installed_games(self):
         """Save installed games registry"""
-        registry_path = os.path.join(os.path.dirname(__file__), 'config', 'installed_games.json')
+        registry_path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'config', 'installed_games.json')
         with open(registry_path, 'w') as f:
             json.dump(self.installed_games, f, indent=2)
     
@@ -115,7 +115,7 @@ class Downloader:
         if is_local == '--remote':
             if 'game_icon' in game_data:
                 base = f'https://raw.githubusercontent.com/MrJuaumBR/LunaEngine-Games/refs/heads/main/games/{game_data["game_name"]}/{game_data["game_icon"]}'
-                file_path = os.path.join(os.path.dirname(__file__), 'cache', f'{game_data['game_name']}-icon.png')
+                file_path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'cache', f'{game_data["game_name"]}-icon.png')
                 if os.path.exists(file_path):
                     try:
                         os.remove(file_path)
@@ -125,10 +125,10 @@ class Downloader:
                 return file_path
         elif is_local == '--local':
             if 'game_icon' in game_data:
-                base = os.path.join(os.path.dirname(__file__), '..', 'games', str(game_data['game_name']), str(game_data['game_icon']))
+                base = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), '..', 'games', str(game_data['game_name']), str(game_data['game_icon']))
                 if os.path.exists(base):
                     # Just copy and move to cache
-                    file_path = os.path.join(os.path.dirname(__file__), 'cache', f'{game_data['game_name']}-icon.png')
+                    file_path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'cache', f'{game_data["game_name"]}-icon.png')
                     try:
                         shutil.copyfile(base, file_path)
                     except PermissionError: pass
@@ -261,13 +261,13 @@ class Downloader:
                 print(f"Updating from v{current_version} to v{game_version}")
             
             # Create temp directory for download
-            temp_dir = os.path.join(os.path.dirname(__file__), 'temp', game_name)
+            temp_dir = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'temp', game_name)
             os.makedirs(temp_dir, exist_ok=True)
             
             # Define paths
             zip_filename = f"{game_name}_{game_version}.zip"
             zip_path = os.path.join(temp_dir, zip_filename)
-            game_folder = os.path.join(os.path.dirname(__file__), 'games', game_name)
+            game_folder = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'games', game_name)
             
             try:
                 # Download the game
@@ -381,14 +381,14 @@ class Downloader:
                 return False
         elif is_local == '--local':
             # Get zip from ../games/
-            games_folder = os.path.join(os.path.dirname(__file__), '..', 'games')
+            games_folder = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), '..', 'games')
             if os.path.exists(games_folder):
                 if progress_callback: progress_callback(1, 'Locally installing game...')
                 game_zip = os.path.join(games_folder, game_data['game_compact_file'] + '.zip')
                 if os.path.exists(game_zip):
                     if progress_callback: progress_callback(6, 'Locally installing game...')
                     game_name = game_data['game_name']
-                    game_folder = os.path.join(os.path.dirname(__file__), 'games', game_name)
+                    game_folder = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'games', game_name)
                     game_version = game_data['game_version']
                     print(f"Installing {game_name} from {game_zip}")
                     
@@ -477,7 +477,7 @@ class Downloader:
             print(f"Game {game_name} is not installed")
             return False
         
-        game_folder = os.path.join(os.path.dirname(__file__), 'games', game_name)
+        game_folder = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'games', game_name)
         
         # Remove game folder
         if os.path.exists(game_folder):
@@ -527,7 +527,7 @@ class Downloader:
     
     def cleanup_temp_files(self):
         """Clean up temporary files"""
-        temp_path = os.path.join(os.path.dirname(__file__), 'temp')
+        temp_path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'temp')
         if os.path.exists(temp_path):
             try:
                 shutil.rmtree(temp_path)
