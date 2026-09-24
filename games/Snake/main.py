@@ -10,13 +10,14 @@ import pygame
 
 class Leaderboard:
     def __init__(self, filename="snake_leaderboard.json"):
-        self.filename = filename
+        file_path = os.path.abspath(os.path.dirname(__file__))
+        self.filename = file_path + "/" + filename
         self.scores = self.load_scores()
         
     def load_scores(self):
         try:
-            if os.path.exists(f'{os.path.dirname(__file__)}/'+self.filename):
-                with open(f'{os.path.dirname(__file__)}/'+self.filename, 'r') as f:
+            if os.path.exists(self.filename):
+                with open(self.filename, 'r') as f:
                     return json.load(f)
         except Exception:
             pass
@@ -37,6 +38,9 @@ class Leaderboard:
         })
         self.scores.sort(key=lambda x: x["score"], reverse=True)
         self.save_scores()
+        
+    def reload(self):
+        self.scores = self.load_scores()
     
     def get_top_scores(self, count=10):
         return self.scores[:count]
@@ -77,14 +81,14 @@ class MainMenuScene(Scene):
         title_x, title_y = ResponsiveUI.scale_position(512, 80, self.ratio)
         title_font = ResponsiveUI.scale_font_size(72, self.ratio)
         Ui_TitleLabel = TextLabel(title_x, title_y, "SNAKE GAME", title_font, 
-                                root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                                pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         self.add_ui_element(Ui_TitleLabel)
         
         play_x, play_y = ResponsiveUI.scale_position(512, 200, self.ratio)
         play_w, play_h = ResponsiveUI.scale_size(220, 50, self.ratio)
         play_font = ResponsiveUI.scale_font_size(36, self.ratio)
         Ui_PlayButton = Button(play_x, play_y, play_w, play_h, "PLAY GAME", play_font, 
-                              root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                              pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         Ui_PlayButton.set_on_click(lambda: self.engine.set_scene("InGame"))
         self.add_ui_element(Ui_PlayButton)
         
@@ -92,7 +96,7 @@ class MainMenuScene(Scene):
         leader_w, leader_h = ResponsiveUI.scale_size(220, 50, self.ratio)
         leader_font = ResponsiveUI.scale_font_size(36, self.ratio)
         Ui_LeaderboardButton = Button(leader_x, leader_y, leader_w, leader_h, "LEADERBOARD", leader_font,
-                                     root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                                     pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         Ui_LeaderboardButton.set_on_click(lambda: self.engine.set_scene("Leaderboard"))
         self.add_ui_element(Ui_LeaderboardButton)
         
@@ -100,7 +104,7 @@ class MainMenuScene(Scene):
         exit_w, exit_h = ResponsiveUI.scale_size(220, 50, self.ratio)
         exit_font = ResponsiveUI.scale_font_size(36, self.ratio)
         Ui_ExitButton = Button(exit_x, exit_y, exit_w, exit_h, "EXIT", exit_font,
-                              root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                              pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         Ui_ExitButton.set_on_click(lambda: setattr(self.engine, 'running', False))
         self.add_ui_element(Ui_ExitButton)
         
@@ -108,19 +112,19 @@ class MainMenuScene(Scene):
         theme_w, theme_h = ResponsiveUI.scale_size(200, 35, self.ratio)
         theme_font = ResponsiveUI.scale_font_size(20, self.ratio)
         Ui_ThemeLabel = TextLabel(theme_x, theme_y - 30, "THEME", 24,
-                                root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                                pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         self.add_ui_element(Ui_ThemeLabel)
         
         Ui_ThemeDropdown = Dropdown(theme_x, theme_y, theme_w, theme_h, 
                                    self.engine.get_theme_names(), theme_font,
-                                   root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                                   pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         Ui_ThemeDropdown.set_on_selection_changed(lambda i, n: self.engine.set_global_theme(ThemeManager.get_theme_type_by_name(n)))
         self.add_ui_element(Ui_ThemeDropdown)
         
         color_x, color_y = ResponsiveUI.scale_position(512, 480, self.ratio)
         color_font = ResponsiveUI.scale_font_size(24, self.ratio)
         Ui_ColorLabel = TextLabel(color_x, color_y, "SNAKE COLOR", color_font,
-                                 root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                                 pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         self.add_ui_element(Ui_ColorLabel)
         
         slider_x = 350 * self.ratio.x
@@ -128,35 +132,35 @@ class MainMenuScene(Scene):
         slider_spacing = 40 * self.ratio.y
         
         Ui_RedLabel = TextLabel(slider_x, slider_y_start, "RED", 20,
-                               root_point=(0, 0.5), theme=ThemeManager.get_current_theme())
+                               pivot=(0, 0.5), theme=ThemeManager.get_current_theme())
         self.add_ui_element(Ui_RedLabel)
         
         self.Ui_RedSlider = Slider(slider_x + 80 * self.ratio.x, slider_y_start, 
                                   150 * self.ratio.x, 20 * self.ratio.y,
                                   0, 255, self.snake_color[0],
-                                  root_point=(0, 0.5), theme=ThemeManager.get_current_theme())
+                                  pivot=(0, 0.5), theme=ThemeManager.get_current_theme())
         self.Ui_RedSlider.on_value_changed = lambda v: self.update_snake_color(0, int(v))
         self.add_ui_element(self.Ui_RedSlider)
         
         Ui_GreenLabel = TextLabel(slider_x, slider_y_start + slider_spacing, "GREEN", 20,
-                                 root_point=(0, 0.5), theme=ThemeManager.get_current_theme())
+                                 pivot=(0, 0.5), theme=ThemeManager.get_current_theme())
         self.add_ui_element(Ui_GreenLabel)
         
         self.Ui_GreenSlider = Slider(slider_x + 80 * self.ratio.x, slider_y_start + slider_spacing,
                                     150 * self.ratio.x, 20 * self.ratio.y,
                                     0, 255, self.snake_color[1],
-                                    root_point=(0, 0.5), theme=ThemeManager.get_current_theme())
+                                    pivot=(0, 0.5), theme=ThemeManager.get_current_theme())
         self.Ui_GreenSlider.on_value_changed = lambda v: self.update_snake_color(1, int(v))
         self.add_ui_element(self.Ui_GreenSlider)
         
         Ui_BlueLabel = TextLabel(slider_x, slider_y_start + slider_spacing * 2, "BLUE", 20,
-                                root_point=(0, 0.5), theme=ThemeManager.get_current_theme())
+                                pivot=(0, 0.5), theme=ThemeManager.get_current_theme())
         self.add_ui_element(Ui_BlueLabel)
         
         self.Ui_BlueSlider = Slider(slider_x + 80 * self.ratio.x, slider_y_start + slider_spacing * 2,
                                    150 * self.ratio.x, 20 * self.ratio.y,
                                    0, 255, self.snake_color[2],
-                                   root_point=(0, 0.5), theme=ThemeManager.get_current_theme())
+                                   pivot=(0, 0.5), theme=ThemeManager.get_current_theme())
         self.Ui_BlueSlider.on_value_changed = lambda v: self.update_snake_color(2, int(v))
         self.add_ui_element(self.Ui_BlueSlider)
         
@@ -197,6 +201,7 @@ class LeaderboardScene(Scene):
         self.engine.set_global_theme(ThemeType.DEEP_SPACE)
         self.clear_ui_elements()
         self.setup_ui()
+        self.leaderboard.reload()
         self.update_leaderboard_display()
         return super().on_enter(previous_scene)
     
@@ -204,7 +209,7 @@ class LeaderboardScene(Scene):
         title_x, title_y = ResponsiveUI.scale_position(512, 80, self.ratio)
         title_font = ResponsiveUI.scale_font_size(64, self.ratio)
         Ui_TitleLabel = TextLabel(title_x, title_y, "LEADERBOARD", title_font,
-                                 root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                                 pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         self.add_ui_element(Ui_TitleLabel)
         
         frame_x, frame_y = ResponsiveUI.scale_position(512, 350, self.ratio)
@@ -213,14 +218,14 @@ class LeaderboardScene(Scene):
         
         self.scroll_frame = ScrollingFrame(int(frame_x), int(frame_y), int(frame_w), int(frame_h), 
                                          int(content_w), int(content_h),
-                                         root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                                         pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         self.add_ui_element(self.scroll_frame)
         
         back_x, back_y = ResponsiveUI.scale_position(512, 650, self.ratio)
         back_w, back_h = ResponsiveUI.scale_size(200, 50, self.ratio)
         back_font = ResponsiveUI.scale_font_size(36, self.ratio)
         Ui_BackButton = Button(back_x, back_y, back_w, back_h, "BACK", back_font,
-                              root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                              pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         Ui_BackButton.set_on_click(lambda: self.engine.set_scene("MainMenu"))
         self.add_ui_element(Ui_BackButton)
     
@@ -234,7 +239,7 @@ class LeaderboardScene(Scene):
         
         if not top_scores:
             no_scores_label = TextLabel(400, 200, "No scores yet! Play the game!", 32,
-                                      root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                                      pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
             self.scroll_frame.add_child(no_scores_label)
             return
         
@@ -247,17 +252,17 @@ class LeaderboardScene(Scene):
             
             rank_text = f"#{i+1} {score_data['name']}"
             rank_label = TextLabel(50, y_pos, rank_text, 28,
-                                 root_point=(0, 0.5), theme=ThemeManager.get_current_theme())
+                                 pivot=(0, 0.5), theme=ThemeManager.get_current_theme())
             self.scroll_frame.add_child(rank_label)
             
             score_text = f"{score_data['score']} pts"
             score_label = TextLabel(350, y_pos, score_text, 28,
-                                  root_point=(0, 0.5), theme=ThemeManager.get_current_theme())
+                                  pivot=(0, 0.5), theme=ThemeManager.get_current_theme())
             self.scroll_frame.add_child(score_label)
             
             date_text = score_data['date']
             date_label = TextLabel(550, y_pos, date_text, 20,
-                                 root_point=(0, 0.5), theme=ThemeManager.get_current_theme())
+                                 pivot=(0, 0.5), theme=ThemeManager.get_current_theme())
             self.scroll_frame.add_child(date_label)
     
     def update(self, dt):
@@ -283,33 +288,33 @@ class NameInputScene(Scene):
         title_x, title_y = ResponsiveUI.scale_position(512, 200, self.ratio)
         title_font = ResponsiveUI.scale_font_size(48, self.ratio)
         Ui_TitleLabel = TextLabel(title_x, title_y, "NEW HIGH SCORE!", title_font,
-                                 root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                                 pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         self.add_ui_element(Ui_TitleLabel)
         
         score_x, score_y = ResponsiveUI.scale_position(512, 260, self.ratio)
         score_font = ResponsiveUI.scale_font_size(36, self.ratio)
         Ui_ScoreLabel = TextLabel(score_x, score_y, f"Score: {self.score}", score_font,
-                                 root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                                 pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         self.add_ui_element(Ui_ScoreLabel)
         
         name_x, name_y = ResponsiveUI.scale_position(512, 330, self.ratio)
         name_font = ResponsiveUI.scale_font_size(32, self.ratio)
         Ui_NameLabel = TextLabel(name_x, name_y, "ENTER YOUR NAME:", name_font,
-                                root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                                pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         self.add_ui_element(Ui_NameLabel)
         
         input_x, input_y = ResponsiveUI.scale_position(512, 380, self.ratio)
         input_w, input_h = ResponsiveUI.scale_size(300, 50, self.ratio)
         self.name_input = TextBox(input_x, input_y, input_w, input_h, "", 
                                    ResponsiveUI.scale_font_size(32, self.ratio),
-                                   root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                                   pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         self.add_ui_element(self.name_input)
         
         submit_x, submit_y = ResponsiveUI.scale_position(512, 460, self.ratio)
         submit_w, submit_h = ResponsiveUI.scale_size(200, 50, self.ratio)
         submit_font = ResponsiveUI.scale_font_size(36, self.ratio)
         Ui_SubmitButton = Button(submit_x, submit_y, submit_w, submit_h, "SAVE", submit_font,
-                                root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                                pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         Ui_SubmitButton.set_on_click(self.save_score)
         self.add_ui_element(Ui_SubmitButton)
     
@@ -382,13 +387,13 @@ class InGameScene(Scene):
         score_x, score_y = ResponsiveUI.scale_position(20, 20, self.ratio)
         score_font = ResponsiveUI.scale_font_size(28, self.ratio)
         self.Ui_ScoreLabel = TextLabel(score_x, score_y, f"SCORE: {self.score}", score_font,
-                                      root_point=(0, 0), theme=ThemeManager.get_current_theme())
+                                      pivot=(0, 0), theme=ThemeManager.get_current_theme())
         self.add_ui_element(self.Ui_ScoreLabel)
         
         info_x, info_y = ResponsiveUI.scale_position(20, 50, self.ratio)
         info_font = ResponsiveUI.scale_font_size(18, self.ratio)
         self.Ui_InfoLabel = TextLabel(info_x, info_y, "WASD/ARROWS TO MOVE | ESC TO MENU", info_font,
-                                     root_point=(0, 0), theme=ThemeManager.get_current_theme())
+                                     pivot=(0, 0), theme=ThemeManager.get_current_theme())
         self.add_ui_element(self.Ui_InfoLabel)
     
     def spawn_apple(self):

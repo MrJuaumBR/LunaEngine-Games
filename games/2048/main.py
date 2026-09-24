@@ -296,14 +296,14 @@ class MainMenu2048(Scene):
         title_x, title_y = ResponsiveUI2048.scale_position(512, 100, self.ratio)
         title_font = ResponsiveUI2048.scale_font_size(72, self.ratio)
         title = TextLabel(title_x, title_y, "2048", title_font, 
-                         root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                         pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         self.add_ui_element(title)
         
         play_x, play_y = ResponsiveUI2048.scale_position(512, 200, self.ratio)
         play_w, play_h = ResponsiveUI2048.scale_size(250, 60, self.ratio)
         play_font = ResponsiveUI2048.scale_font_size(36, self.ratio)
         play_btn = Button(play_x, play_y, play_w, play_h, "PLAY", play_font,
-                         root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                         pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         play_btn.set_on_click(lambda: self.engine.set_scene("Game2048"))
         self.add_ui_element(play_btn)
         
@@ -312,12 +312,12 @@ class MainMenu2048(Scene):
         grid_font = ResponsiveUI2048.scale_font_size(20, self.ratio)
         
         grid_label = TextLabel(grid_x, grid_y - 40, "GRID SIZE", 24,
-                              root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                              pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         self.add_ui_element(grid_label)
         
         self.grid_dropdown = Dropdown(grid_x, grid_y, grid_w, grid_h,
                                      ["4x4", "5x5", "6x6"], grid_font,
-                                     root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                                     pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         self.grid_dropdown.set_on_selection_changed(self.change_grid_size)
         self.add_ui_element(self.grid_dropdown)
         
@@ -325,7 +325,7 @@ class MainMenu2048(Scene):
         leader_w, leader_h = ResponsiveUI2048.scale_size(250, 60, self.ratio)
         leader_font = ResponsiveUI2048.scale_font_size(36, self.ratio)
         leader_btn = Button(leader_x, leader_y, leader_w, leader_h, "LEADERBOARD", leader_font,
-                          root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                          pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         leader_btn.set_on_click(lambda: self.engine.set_scene("Leaderboard2048"))
         self.add_ui_element(leader_btn)
         
@@ -333,7 +333,7 @@ class MainMenu2048(Scene):
         exit_w, exit_h = ResponsiveUI2048.scale_size(250, 60, self.ratio)
         exit_font = ResponsiveUI2048.scale_font_size(36, self.ratio)
         exit_btn = Button(exit_x, exit_y, exit_w, exit_h, "EXIT", exit_font,
-                         root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                         pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         exit_btn.set_on_click(lambda: setattr(self.engine, 'running', False))
         self.add_ui_element(exit_btn)
     
@@ -421,26 +421,26 @@ class Game2048Scene(Scene):
         score_x, score_y = ResponsiveUI2048.scale_position(50, 50, self.ratio)
         score_font = ResponsiveUI2048.scale_font_size(32, self.ratio)
         self.score_label = TextLabel(score_x, score_y, f"SCORE: {self.game.score}", score_font,
-                                    root_point=(0, 0), theme=ThemeManager.get_current_theme())
+                                    pivot=(0, 0), theme=ThemeManager.get_current_theme())
         self.add_ui_element(self.score_label)
         
         high_x, high_y = ResponsiveUI2048.scale_position(50, 90, self.ratio)
         high_font = ResponsiveUI2048.scale_font_size(24, self.ratio)
         self.high_label = TextLabel(high_x, high_y, f"MAX TILE: {self.game.get_max_tile()}", high_font,
-                                   root_point=(0, 0), theme=ThemeManager.get_current_theme())
+                                   pivot=(0, 0), theme=ThemeManager.get_current_theme())
         self.add_ui_element(self.high_label)
         
         moves_x, moves_y = ResponsiveUI2048.scale_position(50, 120, self.ratio)
         moves_font = ResponsiveUI2048.scale_font_size(24, self.ratio)
         self.moves_label = TextLabel(moves_x, moves_y, f"MOVES: {self.game.moves}", moves_font,
-                                    root_point=(0, 0), theme=ThemeManager.get_current_theme())
+                                    pivot=(0, 0), theme=ThemeManager.get_current_theme())
         self.add_ui_element(self.moves_label)
         
         undo_x, undo_y = ResponsiveUI2048.scale_position(self.engine.width - 120, 50, self.ratio)
         undo_w, undo_h = ResponsiveUI2048.scale_size(100, 40, self.ratio)
         undo_font = ResponsiveUI2048.scale_font_size(20, self.ratio)
         self.undo_btn = Button(undo_x, undo_y, undo_w, undo_h, "UNDO", undo_font,
-                              root_point=(0.5, 0), theme=ThemeManager.get_current_theme())
+                              pivot=(0.5, 0), theme=ThemeManager.get_current_theme())
         self.undo_btn.set_on_click(self.undo_move)
         self.add_ui_element(self.undo_btn)
         
@@ -448,7 +448,7 @@ class Game2048Scene(Scene):
         reset_w, reset_h = ResponsiveUI2048.scale_size(100, 40, self.ratio)
         reset_font = ResponsiveUI2048.scale_font_size(20, self.ratio)
         reset_btn = Button(reset_x, reset_y, reset_w, reset_h, "RESET", reset_font,
-                          root_point=(0.5, 0), theme=ThemeManager.get_current_theme())
+                          pivot=(0.5, 0), theme=ThemeManager.get_current_theme())
         reset_btn.set_on_click(self.reset_game)
         self.add_ui_element(reset_btn)
         
@@ -456,7 +456,7 @@ class Game2048Scene(Scene):
         menu_w, menu_h = ResponsiveUI2048.scale_size(100, 40, self.ratio)
         menu_font = ResponsiveUI2048.scale_font_size(20, self.ratio)
         menu_btn = Button(menu_x, menu_y, menu_w, menu_h, "MENU", menu_font,
-                         root_point=(0.5, 0), theme=ThemeManager.get_current_theme())
+                         pivot=(0.5, 0), theme=ThemeManager.get_current_theme())
         menu_btn.set_on_click(lambda: self.engine.set_scene("MainMenu2048"))
         self.add_ui_element(menu_btn)
     
@@ -679,7 +679,7 @@ class Leaderboard2048Scene(Scene):
         title_x, title_y = ResponsiveUI2048.scale_position(512, 80, self.ratio)
         title_font = ResponsiveUI2048.scale_font_size(64, self.ratio)
         title = TextLabel(title_x, title_y, "2048 LEADERBOARD", title_font,
-                         root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                         pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         self.add_ui_element(title)
         
         frame_x, frame_y = ResponsiveUI2048.scale_position(512, 350, self.ratio)
@@ -689,7 +689,7 @@ class Leaderboard2048Scene(Scene):
         self.scroll_frame = ScrollingFrame(
             int(frame_x), int(frame_y), int(frame_w), int(frame_h),
             int(content_w), int(content_h),
-            root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme()
+            pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme()
         )
         self.add_ui_element(self.scroll_frame)
         
@@ -698,7 +698,7 @@ class Leaderboard2048Scene(Scene):
         refresh_w, refresh_h = ResponsiveUI2048.scale_size(120, 50, self.ratio)
         refresh_font = ResponsiveUI2048.scale_font_size(28, self.ratio)
         refresh_btn = Button(refresh_x, refresh_y, refresh_w, refresh_h, "REFRESH", refresh_font,
-                           root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                           pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         refresh_btn.set_on_click(self.reload_leaderboard)
         self.add_ui_element(refresh_btn)
         
@@ -707,7 +707,7 @@ class Leaderboard2048Scene(Scene):
         back_w, back_h = ResponsiveUI2048.scale_size(200, 50, self.ratio)
         back_font = ResponsiveUI2048.scale_font_size(36, self.ratio)
         back_btn = Button(back_x, back_y, back_w, back_h, "BACK", back_font,
-                         root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                         pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         back_btn.set_on_click(lambda: self.engine.set_scene("MainMenu2048"))
         self.add_ui_element(back_btn)
     
@@ -730,7 +730,7 @@ class Leaderboard2048Scene(Scene):
         
         if not top_scores:
             no_scores = TextLabel(400, 200, "No scores yet! Play the game!", 32,
-                                 root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                                 pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
             self.scroll_frame.add_child(no_scores)
             return
         
@@ -740,7 +740,7 @@ class Leaderboard2048Scene(Scene):
         
         for i, header in enumerate(headers):
             header_label = TextLabel(header_positions[i], header_y, header, 24,
-                                    (200, 200, 255), root_point=(0, 0))
+                                    (200, 200, 255), pivot=(0, 0))
             self.scroll_frame.add_child(header_label)
         
         entry_height = 50
@@ -751,27 +751,27 @@ class Leaderboard2048Scene(Scene):
             y_pos = header_y + 60 + i * entry_height
             
             rank_label = TextLabel(header_positions[0], y_pos, f"#{i+1}", 22,
-                                 root_point=(0, 0.5))
+                                 pivot=(0, 0.5))
             self.scroll_frame.add_child(rank_label)
             
             name_label = TextLabel(header_positions[1], y_pos, score_data['name'][:15], 22,
-                                 root_point=(0, 0.5))
+                                 pivot=(0, 0.5))
             self.scroll_frame.add_child(name_label)
             
             score_label = TextLabel(header_positions[2], y_pos, str(score_data['score']), 22,
-                                  root_point=(0, 0.5))
+                                  pivot=(0, 0.5))
             self.scroll_frame.add_child(score_label)
             
             tile_label = TextLabel(header_positions[3], y_pos, str(score_data['max_tile']), 22,
-                                 root_point=(0, 0.5))
+                                 pivot=(0, 0.5))
             self.scroll_frame.add_child(tile_label)
             
             moves_label = TextLabel(header_positions[4], y_pos, str(score_data['moves']), 22,
-                                  root_point=(0, 0.5))
+                                  pivot=(0, 0.5))
             self.scroll_frame.add_child(moves_label)
             
             date_label = TextLabel(header_positions[5], y_pos, score_data['date'], 18,
-                                 root_point=(0, 0.5))
+                                 pivot=(0, 0.5))
             self.scroll_frame.add_child(date_label)
     
     def update(self, dt: float):
@@ -802,25 +802,25 @@ class NameInput2048Scene(Scene):
         title_x, title_y = ResponsiveUI2048.scale_position(512, 200, self.ratio)
         title_font = ResponsiveUI2048.scale_font_size(48, self.ratio)
         title = TextLabel(title_x, title_y, "NEW HIGH SCORE!", title_font,
-                         root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                         pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         self.add_ui_element(title)
         
         score_x, score_y = ResponsiveUI2048.scale_position(512, 260, self.ratio)
         score_font = ResponsiveUI2048.scale_font_size(36, self.ratio)
         score_label = TextLabel(score_x, score_y, f"Score: {self.score}", score_font,
-                               root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                               pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         self.add_ui_element(score_label)
         
         tile_x, tile_y = ResponsiveUI2048.scale_position(512, 300, self.ratio)
         tile_font = ResponsiveUI2048.scale_font_size(24, self.ratio)
         tile_label = TextLabel(tile_x, tile_y, f"Max Tile: {self.max_tile}", tile_font,
-                              root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                              pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         self.add_ui_element(tile_label)
         
         name_x, name_y = ResponsiveUI2048.scale_position(512, 360, self.ratio)
         name_font = ResponsiveUI2048.scale_font_size(32, self.ratio)
         name_label = TextLabel(name_x, name_y, "ENTER YOUR NAME:", name_font,
-                              root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                              pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         self.add_ui_element(name_label)
         
         # Create TextBox with proper LunaEngine parameters
@@ -829,13 +829,13 @@ class NameInput2048Scene(Scene):
         input_font = ResponsiveUI2048.scale_font_size(28, self.ratio)
         
         # TextBox parameters as per your LunaEngine:
-        # __init__(self, x, y, width, height, text, font_size, font_name, root_point, theme, max_length, element_id)
+        # __init__(self, x, y, width, height, text, font_size, font_name, pivot, theme, max_length, element_id)
         self.name_input = TextBox(
             input_x, input_y, input_w, input_h, 
             "",  # text
             input_font,  # font_size
             None,  # font_name (use default)
-            (0.5, 0.5),  # root_point
+            (0.5, 0.5),  # pivot
             ThemeManager.get_current_theme(),  # theme
             20,  # max_length
             "name_input"  # element_id
@@ -846,7 +846,7 @@ class NameInput2048Scene(Scene):
         save_w, save_h = ResponsiveUI2048.scale_size(200, 50, self.ratio)
         save_font = ResponsiveUI2048.scale_font_size(36, self.ratio)
         save_btn = Button(save_x, save_y, save_w, save_h, "SAVE", save_font,
-                         root_point=(0.5, 0.5), theme=ThemeManager.get_current_theme())
+                         pivot=(0.5, 0.5), theme=ThemeManager.get_current_theme())
         save_btn.set_on_click(self.save_score)
         self.add_ui_element(save_btn)
     

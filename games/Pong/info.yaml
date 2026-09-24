@@ -1,0 +1,17 @@
+title: Pong
+version: 0.0.2
+author: MrJuaumBR
+tags:
+- simple
+- retro
+- old
+type: game
+description: This game is simply pong game, no more, no less
+main_file: main.py
+icon: icon.png
+banner: null
+color1: "#32ff32"
+color2: "#001400"
+contacts: {}
+args:
+  username: false

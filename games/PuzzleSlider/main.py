@@ -259,7 +259,7 @@ class MainMenu(Scene):
         
     def setup_ui(self):
         ThemeManager.set_current_theme(ThemeType.SUNSET)
-        title = TextLabel(self.engine.width//2, 100*data.ratio.y, "Puzzle Slider", 86, (50, 50, 60), None, root_point=(0.5, 0))
+        title = TextLabel(self.engine.width//2, 100*data.ratio.y, "Puzzle Slider", 86, (50, 50, 60), None, pivot=(0.5, 0))
         hover_anim = Tween.create(title)
         hover_anim.to(
             y = 60 * data.ratio.y,
@@ -270,19 +270,19 @@ class MainMenu(Scene):
         self.engine.animation_handler.add('title_hover_anim', hover_anim, True)
         self.add_ui_element(title)
         
-        self.play_button = Button(self.engine.width//2, 250*data.ratio.y, 200*data.ratio.x, 65*data.ratio.y, "Play", 50, None, root_point=(0.5, 0))
+        self.play_button = Button(self.engine.width//2, 250*data.ratio.y, 200*data.ratio.x, 65*data.ratio.y, "Play", 50, None, pivot=(0.5, 0))
         self.play_button.set_on_click(self.play)
         self.add_ui_element(self.play_button)
         
-        self.difficulty_dropdown = Dropdown(self.engine.width-200*data.ratio.x, 225*data.ratio.y, 200*data.ratio.x, 50*data.ratio.y, ['Easy', 'Normal', 'Hard'], 40, None, root_point=(1, 0))
+        self.difficulty_dropdown = Dropdown(self.engine.width-200*data.ratio.x, 225*data.ratio.y, 200*data.ratio.x, 50*data.ratio.y, ['Easy', 'Normal', 'Hard'], 40, None, pivot=(1, 0))
         self.add_ui_element(self.difficulty_dropdown)
         
-        self.leaderboard_button = Button(self.engine.width//2, 330*data.ratio.y, 200*data.ratio.x, 50*data.ratio.y, "Leaderboard", 40, None, root_point=(0.5, 0))
+        self.leaderboard_button = Button(self.engine.width//2, 330*data.ratio.y, 200*data.ratio.x, 50*data.ratio.y, "Leaderboard", 40, None, pivot=(0.5, 0))
         self.leaderboard_button.set_on_click(self.leaderboard)
         self.add_ui_element(self.leaderboard_button)
         
-        self.exit_button = Button(self.engine.width//2, 390*data.ratio.y, 200*data.ratio.x, 50*data.ratio.y, "Exit", 40, None, root_point=(0.5, 0))
-        self.exit_button.set_on_click(self.quit)
+        self.exit_button = Button(self.engine.width//2, 390*data.ratio.y, 200*data.ratio.x, 50*data.ratio.y, "Exit", 40, None, pivot=(0.5, 0))
+        self.exit_button.set_on_click(lambda: setattr(self.engine, 'running', False))
         self.add_ui_element(self.exit_button)
         
     def play(self):
@@ -291,9 +291,6 @@ class MainMenu(Scene):
         
     def leaderboard(self):
         self.engine.set_scene("leaderboard")
-        
-    def quit(self):
-        self.engine.shutdown()
     
     def on_enter(self, previous_scene = None):
         return super().on_enter(previous_scene)
@@ -343,55 +340,55 @@ class GameScene(Scene):
         
     def setup_ui(self):
         # Timer
-        self.timer = TextLabel(self.engine.width//2, 50*data.ratio.y, "00:00", 50, (0, 0, 0), None, root_point=(0.5, 0))
+        self.timer = TextLabel(self.engine.width//2, 50*data.ratio.y, "00:00", 50, (0, 0, 0), None, pivot=(0.5, 0))
         self.add_ui_element(self.timer)
         
         # Difficulty label
         difficulty_names = ['Easy', 'Normal', 'Hard']
         self.add_ui_element(TextLabel(self.engine.width//2, 110*data.ratio.y, 
                                      difficulty_names[self.difficulty], 24, (200, 170, 100), 
-                                     None, root_point=(0.5, 0)))
+                                     None, pivot=(0.5, 0)))
         
         # Moves counter
         self.moves_label = TextLabel(self.engine.width//2, 150*data.ratio.y, "Moves: 0", 24, (200, 170, 100), 
-                                     None, root_point=(0.5, 0))
+                                     None, pivot=(0.5, 0))
         self.add_ui_element(self.moves_label)
         
         # Message display
         self.message_label = TextLabel(self.engine.width//2, 180*data.ratio.y, 
                                       "Click tiles to slide", 20, self.puzzle.MESSAGECOLOR, 
-                                      None, root_point=(0.5, 0))
+                                      None, pivot=(0.5, 0))
         self.add_ui_element(self.message_label)
         
         # Control buttons
         self.reset_button = Button(self.engine.width - 150*data.ratio.x, 50*data.ratio.y, 
                                   120*data.ratio.x, 40*data.ratio.y, "Reset", 30, 
-                                  None, root_point=(1, 0))
+                                  None, pivot=(1, 0))
         self.reset_button.set_on_click(self.reset_puzzle)
         self.add_ui_element(self.reset_button)
         
         self.new_button = Button(self.engine.width - 150*data.ratio.x, 100*data.ratio.y, 
                                120*data.ratio.x, 40*data.ratio.y, "New Game", 30, 
-                               None, root_point=(1, 0))
+                               None, pivot=(1, 0))
         self.new_button.set_on_click(self.new_puzzle)
         self.add_ui_element(self.new_button)
         
         self.menu_button = Button(self.engine.width - 150*data.ratio.x, 150*data.ratio.y, 
                                 120*data.ratio.x, 40*data.ratio.y, "Menu", 30, 
-                                None, root_point=(1, 0))
+                                None, pivot=(1, 0))
         self.menu_button.set_on_click(self.go_to_menu)
         self.add_ui_element(self.menu_button)
         
         # Solved message (initially hidden)
         self.solved_message = TextLabel(self.engine.width//2, 250*data.ratio.y, 
                                        "Puzzle Solved! 🎉", 48, (0, 255, 0), 
-                                       None, root_point=(0.5, 0))
+                                       None, pivot=(0.5, 0))
         self.solved_message.visible = False
         
         # Save score button (shown when solved)
         self.save_button = Button(self.engine.width//2, 320*data.ratio.y, 
                                 200*data.ratio.x, 50*data.ratio.y, "Save Score", 40, 
-                                None, root_point=(0.5, 0))
+                                None, pivot=(0.5, 0))
         self.save_button.set_on_click(self.save_score)
         self.save_button.visible = False
         
@@ -571,16 +568,16 @@ class LeaderboardScene(Scene):
         
     def setup_ui(self):
         ThemeManager.set_current_theme(ThemeType.SUNSET)
-        self.add_ui_element(TextLabel(self.engine.width//2, 30*data.ratio.y, 'Leaderboard', 72, (200, 170, 100), None, root_point=(0.5, 0)))
+        self.add_ui_element(TextLabel(self.engine.width//2, 30*data.ratio.y, 'Leaderboard', 72, (200, 170, 100), None, pivot=(0.5, 0)))
     
-        self.add_ui_element(TextLabel(self.engine.width//2, 120*data.ratio.y, 'Rank - Name - Score - Date - Difficulty', 36, (200, 170, 100), None, root_point=(0.5, 0)))    
-        self.scrolling_frame = ScrollingFrame(self.engine.width//2, int(180*data.ratio.y), int(600*data.ratio.x), int(400*data.ratio.y), int(600*data.ratio.x), int(600*data.ratio.y), root_point=(0.5, 0))
+        self.add_ui_element(TextLabel(self.engine.width//2, 120*data.ratio.y, 'Rank - Name - Score - Date - Difficulty', 36, (200, 170, 100), None, pivot=(0.5, 0)))    
+        self.scrolling_frame = ScrollingFrame(self.engine.width//2, int(180*data.ratio.y), int(600*data.ratio.x), int(400*data.ratio.y), int(600*data.ratio.x), int(600*data.ratio.y), pivot=(0.5, 0))
         self.add_ui_element(self.scrolling_frame)
         
         # Back button
         self.back_button = Button(100*data.ratio.x, 50*data.ratio.y, 
                                 120*data.ratio.x, 50*data.ratio.y, "Back", 40, 
-                                None, root_point=(0, 0))
+                                None, pivot=(0, 0))
         self.back_button.set_on_click(self.go_back)
         self.add_ui_element(self.back_button)
     
@@ -590,7 +587,7 @@ class LeaderboardScene(Scene):
             user_score:str = score['score']
             user_score_date:str = score['date']
             user_difficulty:str = score['difficulty']
-            self.scrolling_frame.add_child(TextLabel(5*data.ratio.x, i*30*data.ratio.y, f"{i+1} - {user_name} - {user_score} - {user_score_date} - {user_difficulty}", 28, (200, 170, 100), None, root_point=(0, 0)))
+            self.scrolling_frame.add_child(TextLabel(5*data.ratio.x, i*30*data.ratio.y, f"{i+1} - {user_name} - {user_score} - {user_score_date} - {user_difficulty}", 28, (200, 170, 100), None, pivot=(0, 0)))
             
     def reload_scores(self):
         self.scrolling_frame.clear_children()

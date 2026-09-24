@@ -1,0 +1,19 @@
+title: Farming
+version: 0.0.2
+author: MrJuaumBR
+tags:
+- cozy
+- simulation
+- time
+type: game
+description: A Simple Farming Game
+main_file: main.py
+icon: assets/icon.png
+banner: null
+color1: "#E67E22"
+color2: "#2980B9"
+contacts: {}
+args:
+  username: false
+save_type: file
+save_data_path: leaderboard.json

@@ -1,0 +1,28 @@
+title: TankSiege
+version: 0.0.1
+author: MrJuaumBR
+tags:
+  - arcade
+  - shooter
+  - tank
+  - action
+  - survival
+type: game
+description: Survive waves of smart AI tanks in this top-down arena shooter. Level up, dodge bullets, and defeat the boss!
+main_file: main.py
+icon: assets/icon.png
+banner: null
+color1: "#4a7c59"
+color2: "#6b4e3a"
+contacts:
+  discord: 
+    - url: https://discord.gg/fb84sHDX7R
+    - name: Discord
+  github:
+    - url: https://github.com/MrJuaumBR/LunaEngine-Games/games/TankSiege
+    - name: Launcher Game Repo
+args:
+  username: false
+  fullscreen: true
+save_type: file
+save_data_path: leaderboard.json

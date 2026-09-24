@@ -1,0 +1,21 @@
+title: MemoryCard
+version: 0.0.1
+author: MrJuaumBR
+tags:
+- cozy
+- puzzle
+- cards
+type: game
+description: A Memory Game with Cards
+main_file: main.py
+icon: icon.png
+banner: null
+color1: "#cac5b0"
+color2: "#9c9781"
+contacts: {}
+args:
+  username: false
+  fullscreen: true
+  debug: true
+save_type: file
+save_data_path: memory_leaderboard.json

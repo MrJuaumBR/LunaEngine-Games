@@ -1,0 +1,19 @@
+title: Snake
+version: 0.0.2
+author: MrJuaumBR
+tags:
+- snake
+- retro
+- growth
+- classic
+- arcade
+type: game
+description: A Snake demo like the old ones that you easily found literally anywhere
+main_file: main.py
+icon: icon.png
+banner: null
+color1: "#fff981"
+color2: "#3042b2"
+contacts: {}
+args:
+  username: false

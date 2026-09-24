@@ -1,0 +1,22 @@
+title: Flapyn
+version: 0.0.1
+author: MrJuaumBR
+tags:
+- cozy
+- simple
+- scoring
+- retro
+type: game
+description: A Simple Flappy Bird based game
+main_file: main.py
+icon: assets/textures/icon.png
+banner: null
+color1: "#fbf236"
+color2: "#e3edff"
+contacts: {}
+args:
+  username: false
+  fullscreen: true
+  debug: true
+save_type: file
+save_data_path: leaderboard.json

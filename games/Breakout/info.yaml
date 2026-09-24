@@ -1,0 +1,24 @@
+title: Breakout
+version: 0.0.1
+author: MrJuaumBR
+tags:
+- cozy
+- pong
+- break
+- arcade
+- classic
+- retro
+type: game
+description: A Breakout/Block Breaker game for the classic arcade game.
+main_file: main.py
+icon: assets/icon.png
+banner: null
+color1: "#532da7"
+color2: "#e128dc"
+contacts: {}
+args:
+  username: false
+  fullscreen: true
+  debug: true
+save_type: file
+save_data_path: leaderboard.json

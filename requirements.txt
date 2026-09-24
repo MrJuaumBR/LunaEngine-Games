@@ -1,0 +1,6 @@
+# requirements.txt for LunaEngine Launcher (PyQt5 standalone)
+
+PyQt5 >= 5.15.0
+requests >= 2.25.0
+pyinstaller >= 5.0.0   # optional: for creating .exe
+pyyaml # Only required for generate data

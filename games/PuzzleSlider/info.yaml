@@ -1,0 +1,17 @@
+title: PuzzleSlider
+version: 0.0.1
+author: MrJuaumBR
+tags:
+- simple
+- puzzle
+- arcade
+type: game
+description: Just a Puzzle Slider game
+main_file: main.py
+icon: icon.png
+banner: null
+color1: "#caec43"
+color2: "#84508a"
+contacts: {}
+args:
+  username: false

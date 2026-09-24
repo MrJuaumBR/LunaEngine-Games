@@ -1,0 +1,18 @@
+title: Scarf of Night
+version: 0.0.2
+author: MrJuaumBR
+tags:
+- plataformer
+- physics
+- hard
+- ninja
+type: game
+description: A Plataformer game that you need to complete as fast as possible
+main_file: main.py
+icon: assets/icon.png
+banner: null
+color1: "#ad1e07"
+color2: "#7855b9"
+contacts: {}
+args:
+  username: false

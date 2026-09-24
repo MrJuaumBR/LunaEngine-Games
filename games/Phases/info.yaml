@@ -1,0 +1,21 @@
+title: Phases
+version: 0.0.1
+author: MrJuaumBR
+tags:
+- simple
+- arcade
+- levels
+type: game
+description: A Phase-based game
+main_file: main.py
+icon: assets/textures/icon.png
+banner: null
+color1: "#90a086"
+color2: "#cbdbfc"
+contacts: {}
+args:
+  username: false
+  fullscreen: true
+  debug: true
+save_type: file
+save_data_path: leaderboard.json

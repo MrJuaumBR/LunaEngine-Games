@@ -1,0 +1,18 @@
+title: Naves
+version: 0.0.2
+author: MrJuaumBR
+tags:
+- retro
+- classic
+- arcade
+- spaceshooter
+type: game
+description: A simple spaceshooter like the old ones that we have on web and old consoles
+main_file: main.py
+icon: assets/icon.png
+banner: null
+color1: "#565656"
+color2: "#7855b9"
+contacts: {}
+args:
+  username: false

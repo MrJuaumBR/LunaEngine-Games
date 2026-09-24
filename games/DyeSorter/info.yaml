@@ -1,0 +1,19 @@
+title: DyeSorter
+version: 0.0.1
+author: MrJuaumBR
+tags:
+- cozy
+- sorting
+- puzzle
+type: game
+description: A Simple Puzzle Dye Sorting Game
+main_file: main.py
+icon: icon.png
+banner: null
+color1: "#cbdbfc"
+color2: "#3beeee"
+contacts: {}
+args:
+  username: false
+save_type: file
+save_data_path: leaderboard.json

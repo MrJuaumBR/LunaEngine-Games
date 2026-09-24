@@ -1,135 +1,512 @@
 {
   "info": {
-    "version": "0.0.1",
+    "version": 0,
     "author": "MrJuaumBR",
-    "total_games": 6
+    "total_games": 15,
+    "last_update": "2026-09-08 16:47:12"
   },
   "games": [
     {
-      "game_name": "2048",
-      "game_version": "0.0.1",
-      "game_author": "MrJuaumBR",
-      "game_tags": [
+      "title": "2048",
+      "version": "0.0.1",
+      "author": "MrJuaumBR",
+      "tags": [
         "cozy",
         "simple",
         "arcade",
         "math",
         "puzzle"
       ],
-      "game_category": "game",
-      "game_description": "This game is the game of the math, 2, 4, 8, 16, 32, 64, ...",
-      "game_main_file": "main.py",
-      "game_icon": "icon.png",
-      "game_compact_file": "2048-0.0.1",
+      "type": "game",
+      "description": "This game is the game of the math, 2, 4, 8, 16, 32, 64, ...",
+      "main_file": "main.py",
+      "icon": "icon.png",
+      "banner": null,
+      "color1": "#3b82f6",
+      "color2": "#10b981",
+      "contacts": {
+        "discord": [
+          {
+            "url": "https://discord.gg/fb84sHDX7R",
+            "name": "Discord"
+          }
+        ],
+        "homepage": [
+          {
+            "url": "https://github.com/MrJuaumBR/LunaEngine-Games",
+            "name": "Homepage"
+          }
+        ]
+      },
+      "args": {
+        "fullscreen": true,
+        "username": true
+      },
+      "save_type": "file",
+      "save_data_path": "2048_leaderboard.json",
       "total_files": 3,
-      "total_size": 0.03593158721923828,
+      "total_size_mb": 0.04,
       "requirements": [
         "lunaengine"
-      ]
+      ],
+      "compact_file": "2048-0.0.1.zip",
+      "external_game": false
     },
     {
-      "game_name": "Farming",
-      "game_version": "0.0.1",
-      "game_author": "MrJuaumBR",
-      "game_tags": [
+      "title": "Breakout",
+      "version": "0.0.1",
+      "author": "MrJuaumBR",
+      "tags": [
+        "cozy",
+        "pong",
+        "break",
+        "arcade",
+        "classic",
+        "retro"
+      ],
+      "type": "game",
+      "description": "A Breakout/Block Breaker game for the classic arcade game.",
+      "main_file": "main.py",
+      "icon": "assets/icon.png",
+      "banner": null,
+      "color1": "#532da7",
+      "color2": "#e128dc",
+      "contacts": {},
+      "args": {
+        "username": false,
+        "fullscreen": true,
+        "debug": true
+      },
+      "save_type": "file",
+      "save_data_path": "leaderboard.json",
+      "total_files": 4,
+      "total_size_mb": 1.95,
+      "requirements": [
+        "lunaengine"
+      ],
+      "compact_file": "Breakout-0.0.1.zip",
+      "external_game": false
+    },
+    {
+      "title": "DyeSorter",
+      "version": "0.0.1",
+      "author": "MrJuaumBR",
+      "tags": [
+        "cozy",
+        "sorting",
+        "puzzle"
+      ],
+      "type": "game",
+      "description": "A Simple Puzzle Dye Sorting Game",
+      "main_file": "main.py",
+      "icon": "icon.png",
+      "banner": null,
+      "color1": "#cbdbfc",
+      "color2": "#3beeee",
+      "contacts": {},
+      "args": {
+        "username": false
+      },
+      "save_type": "file",
+      "save_data_path": "leaderboard.json",
+      "total_files": 4,
+      "total_size_mb": 0.0,
+      "requirements": [
+        "lunaengine"
+      ],
+      "compact_file": "DyeSorter-0.0.1.zip",
+      "external_game": false
+    },
+    {
+      "title": "Farming",
+      "version": "0.0.2",
+      "author": "MrJuaumBR",
+      "tags": [
         "cozy",
         "simulation",
         "time"
       ],
-      "game_category": "game",
-      "game_description": "A Simple Farming Game",
-      "game_main_file": "main.py",
-      "game_icon": "assets/icon.png",
-      "game_compact_file": "Farming-0.0.1",
+      "type": "game",
+      "description": "A Simple Farming Game",
+      "main_file": "main.py",
+      "icon": "assets/icon.png",
+      "banner": null,
+      "color1": "#E67E22",
+      "color2": "#2980B9",
+      "contacts": {},
+      "args": {
+        "username": false
+      },
+      "save_type": "file",
+      "save_data_path": "leaderboard.json",
       "total_files": 12,
-      "total_size": 0.9488534927368164,
+      "total_size_mb": 0.95,
       "requirements": [
-        "lunaengine>=0.1.4.2"
-      ]
+        "lunaengine"
+      ],
+      "compact_file": "Farming-0.0.2.zip",
+      "external_game": false
     },
     {
-      "game_name": "Naves",
-      "game_version": "0.0.1",
-      "game_author": "MrJuaumBR",
-      "game_tags": [
+      "title": "Flapyn",
+      "version": "0.0.1",
+      "author": "MrJuaumBR",
+      "tags": [
+        "cozy",
+        "simple",
+        "scoring",
+        "retro"
+      ],
+      "type": "game",
+      "description": "A Simple Flappy Bird based game",
+      "main_file": "main.py",
+      "icon": "assets/textures/icon.png",
+      "banner": null,
+      "color1": "#fbf236",
+      "color2": "#e3edff",
+      "contacts": {},
+      "args": {
+        "username": false,
+        "fullscreen": true,
+        "debug": true
+      },
+      "save_type": "file",
+      "save_data_path": "leaderboard.json",
+      "total_files": 9,
+      "total_size_mb": 2.06,
+      "requirements": [
+        "lunaengine"
+      ],
+      "compact_file": "Flapyn-0.0.1.zip",
+      "external_game": false
+    },
+    {
+      "title": "MemoryCard",
+      "version": "0.0.1",
+      "author": "MrJuaumBR",
+      "tags": [
+        "cozy",
+        "puzzle",
+        "cards"
+      ],
+      "type": "game",
+      "description": "A Memory Game with Cards",
+      "main_file": "main.py",
+      "icon": "icon.png",
+      "banner": null,
+      "color1": "#cac5b0",
+      "color2": "#9c9781",
+      "contacts": {},
+      "args": {
+        "username": false,
+        "fullscreen": true,
+        "debug": true
+      },
+      "save_type": "file",
+      "save_data_path": "memory_leaderboard.json",
+      "total_files": 5,
+      "total_size_mb": 0.08,
+      "requirements": [
+        "lunaengine"
+      ],
+      "compact_file": "MemoryCard-0.0.1.zip",
+      "external_game": false
+    },
+    {
+      "title": "Naves",
+      "version": "0.0.2",
+      "author": "MrJuaumBR",
+      "tags": [
         "retro",
         "classic",
         "arcade",
         "spaceshooter"
       ],
-      "game_category": "game",
-      "game_description": "A simple spaceshooter like the old ones that we have on web and old consoles",
-      "game_main_file": "main.py",
-      "game_icon": "assets/icon.png",
-      "game_compact_file": "Naves-0.0.1",
-      "total_files": 14,
-      "total_size": 3.0400161743164062,
+      "type": "game",
+      "description": "A simple spaceshooter like the old ones that we have on web and old consoles",
+      "main_file": "main.py",
+      "icon": "assets/icon.png",
+      "banner": null,
+      "color1": "#565656",
+      "color2": "#7855b9",
+      "contacts": {},
+      "args": {
+        "username": false
+      },
+      "save_type": null,
+      "save_data_path": "",
+      "total_files": 12,
+      "total_size_mb": 3.04,
       "requirements": [
+        "pygame",
         "LunaEngine>=0.1.4.2"
-      ]
+      ],
+      "compact_file": "Naves-0.0.2.zip",
+      "external_game": false
     },
     {
-      "game_name": "PuzzleSlider",
-      "game_version": "0.0.1",
-      "game_author": "MrJuaumBR",
-      "game_tags": [
+      "title": "Phases",
+      "version": "0.0.1",
+      "author": "MrJuaumBR",
+      "tags": [
+        "simple",
+        "arcade",
+        "levels"
+      ],
+      "type": "game",
+      "description": "A Phase-based game",
+      "main_file": "main.py",
+      "icon": "assets/textures/icon.png",
+      "banner": null,
+      "color1": "#90a086",
+      "color2": "#cbdbfc",
+      "contacts": {},
+      "args": {
+        "username": false,
+        "fullscreen": true,
+        "debug": true
+      },
+      "save_type": "file",
+      "save_data_path": "leaderboard.json",
+      "total_files": 13,
+      "total_size_mb": 1.97,
+      "requirements": [
+        "lunaengine"
+      ],
+      "compact_file": "Phases-0.0.1.zip",
+      "external_game": false
+    },
+    {
+      "title": "Pong",
+      "version": "0.0.2",
+      "author": "MrJuaumBR",
+      "tags": [
+        "simple",
+        "retro",
+        "old"
+      ],
+      "type": "game",
+      "description": "This game is simply pong game, no more, no less",
+      "main_file": "main.py",
+      "icon": "icon.png",
+      "banner": null,
+      "color1": "#32ff32",
+      "color2": "#001400",
+      "contacts": {},
+      "args": {
+        "username": false
+      },
+      "save_type": null,
+      "save_data_path": "",
+      "total_files": 3,
+      "total_size_mb": 0.03,
+      "requirements": [
+        "lunaengine"
+      ],
+      "compact_file": "Pong-0.0.2.zip",
+      "external_game": false
+    },
+    {
+      "title": "PuzzleSlider",
+      "version": "0.0.1",
+      "author": "MrJuaumBR",
+      "tags": [
         "simple",
         "puzzle",
         "arcade"
       ],
-      "game_category": "game",
-      "game_description": "Just a Puzzle Slider game",
-      "game_main_file": "main.py",
-      "game_icon": "icon.png",
-      "game_compact_file": "PuzzleSlider-0.0.1",
+      "type": "game",
+      "description": "Just a Puzzle Slider game",
+      "main_file": "main.py",
+      "icon": "icon.png",
+      "banner": null,
+      "color1": "#caec43",
+      "color2": "#84508a",
+      "contacts": {},
+      "args": {
+        "username": false
+      },
+      "save_type": null,
+      "save_data_path": "",
       "total_files": 3,
-      "total_size": 0.02555370330810547,
+      "total_size_mb": 0.03,
       "requirements": [
         "lunaengine"
-      ]
+      ],
+      "compact_file": "PuzzleSlider-0.0.1.zip",
+      "external_game": false
     },
     {
-      "game_name": "Scarf of Night",
-      "game_version": "0.0.1",
-      "game_author": "MrJuaumBR",
-      "game_tags": [
+      "title": "Scarf of Night",
+      "version": "0.0.2",
+      "author": "MrJuaumBR",
+      "tags": [
         "plataformer",
         "physics",
         "hard",
         "ninja"
       ],
-      "game_category": "game",
-      "game_description": "A Plataformer game that you need to complete as fast as possible",
-      "game_main_file": "main.py",
-      "game_icon": "assets/icon.png",
-      "game_compact_file": "Scarf of Night-0.0.1",
+      "type": "game",
+      "description": "A Plataformer game that you need to complete as fast as possible",
+      "main_file": "main.py",
+      "icon": "assets/icon.png",
+      "banner": null,
+      "color1": "#ad1e07",
+      "color2": "#7855b9",
+      "contacts": {},
+      "args": {
+        "username": false
+      },
+      "save_type": null,
+      "save_data_path": "",
       "total_files": 14,
-      "total_size": 0.7618923187255859,
+      "total_size_mb": 0.76,
       "requirements": [
         "lunaengine>=0.1.5"
-      ]
+      ],
+      "compact_file": "Scarf of Night-0.0.2.zip",
+      "external_game": false
     },
     {
-      "game_name": "Snake",
-      "game_version": "0.0.1",
-      "game_author": "MrJuaumBR",
-      "game_tags": [
+      "title": "Snake",
+      "version": "0.0.2",
+      "author": "MrJuaumBR",
+      "tags": [
         "snake",
         "retro",
         "growth",
         "classic",
         "arcade"
       ],
-      "game_category": "game",
-      "game_description": "A Snake demo like the old ones that you easily found literally anywhere",
-      "game_main_file": "main.py",
-      "game_icon": "icon.png",
-      "game_compact_file": "Snake-0.0.1",
+      "type": "game",
+      "description": "A Snake demo like the old ones that you easily found literally anywhere",
+      "main_file": "main.py",
+      "icon": "icon.png",
+      "banner": null,
+      "color1": "#fff981",
+      "color2": "#3042b2",
+      "contacts": {},
+      "args": {
+        "username": false
+      },
+      "save_type": null,
+      "save_data_path": "",
       "total_files": 3,
-      "total_size": 0.02827167510986328,
+      "total_size_mb": 0.03,
       "requirements": [
-        "lunaengine>=0.1.5"
-      ]
+        "lunaengine"
+      ],
+      "compact_file": "Snake-0.0.2.zip",
+      "external_game": false
+    },
+    {
+      "title": "TankSiege",
+      "version": "0.0.1",
+      "author": "MrJuaumBR",
+      "tags": [
+        "arcade",
+        "shooter",
+        "tank",
+        "action",
+        "survival"
+      ],
+      "type": "game",
+      "description": "Survive waves of smart AI tanks in this top-down arena shooter. Level up, dodge bullets, and defeat the boss!",
+      "main_file": "main.py",
+      "icon": "assets/icon.png",
+      "banner": null,
+      "color1": "#4a7c59",
+      "color2": "#6b4e3a",
+      "contacts": {
+        "discord": [
+          {
+            "url": "https://discord.gg/fb84sHDX7R",
+            "name": "Discord"
+          }
+        ],
+        "github": [
+          {
+            "url": "https://github.com/MrJuaumBR/LunaEngine-Games/games/TankSiege",
+            "name": "Github"
+          }
+        ]
+      },
+      "args": {
+        "username": false,
+        "fullscreen": true
+      },
+      "save_type": "file",
+      "save_data_path": "leaderboard.json",
+      "total_files": 4,
+      "total_size_mb": 0.07,
+      "requirements": [
+        "lunaengine"
+      ],
+      "compact_file": "TankSiege-0.0.1.zip",
+      "external_game": false
+    },
+    {
+      "title": "TicTacToe",
+      "version": "0.0.1",
+      "author": "MrJuaumBR",
+      "tags": [
+        "simple",
+        "arcade"
+      ],
+      "type": "game",
+      "description": "Is basically, tic tac toe, not much to say",
+      "main_file": "main.py",
+      "icon": "icon.png",
+      "banner": null,
+      "color1": "#ffa500",
+      "color2": "#ffdab9",
+      "contacts": {},
+      "args": {
+        "username": false
+      },
+      "save_type": "file",
+      "save_data_path": "leaderboard.json",
+      "total_files": 3,
+      "total_size_mb": 0.02,
+      "requirements": [
+        "lunaengine"
+      ],
+      "compact_file": "TicTacToe-0.0.1.zip",
+      "external_game": false
+    },
+    {
+      "title": "DungeonGenerator",
+      "version": "0.0.1",
+      "author": "MrJuaumBR",
+      "tags": [
+        "procedural",
+        "dungeon",
+        "generator",
+        "medieval-themed"
+      ],
+      "type": "app",
+      "description": "A Dungeon generator application",
+      "main_file": "app.py",
+      "icon": "icon.png",
+      "banner": null,
+      "color1": "#6495ed",
+      "color2": "#5a5a8f",
+      "contacts": {},
+      "args": {
+        "fullscreen": true,
+        "debug": true
+      },
+      "save_type": "file",
+      "save_data_path": "saves.json",
+      "total_files": 7,
+      "total_size_mb": 0.19,
+      "requirements": [
+        "numpy",
+        "lunaengine"
+      ],
+      "compact_file": "DungeonGenerator-0.0.1.zip",
+      "external_game": true,
+      "repo_url": "https://github.com/MrJuaumBR/DungeonGenerator"
     }
   ]
 }

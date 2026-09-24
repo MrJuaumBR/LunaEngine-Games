@@ -1,4 +1,4 @@
-from lunaengine.core import LunaEngine, Scene, Renderer, AudioSystem
+from lunaengine.core import LunaEngine, Scene, Renderer, AudioManager
 from lunaengine.ui import *
 from lunaengine.graphics import SpriteSheet, Animation, Camera, CameraMode, ParticleConfig, ParticleType
 import pygame, os, random, time, json, sys
@@ -29,7 +29,7 @@ class Data:
                 with open(f'{os.path.dirname(__file__)}/leaderboard.json', 'r') as f:
                     self.leaderboard = json.load(f)
         except Exception as e:
-            print(f"Erro ao carregar leaderboard: {e}")
+            print(f"Error loading leaderboard: {e}")
             self.leaderboard = {"scores": []}
     
     def save_leaderboard(self):
@@ -37,7 +37,7 @@ class Data:
             with open(f'{os.path.dirname(__file__)}/leaderboard.json', 'w') as f:
                 json.dump(self.leaderboard, f, indent=2)
         except Exception as e:
-            print(f"Erro ao salvar leaderboard: {e}")
+            print(f"Error saving leaderboard: {e}")
                 
     def load_maps(self):
         try:
@@ -46,7 +46,7 @@ class Data:
                 with open(maps_path, 'r') as f:
                     self.maps = json.load(f)
         except Exception as e:
-            print(f"Erro ao carregar mapas: {e}")
+            print(f"Error loading maps: {e}")
             self.maps = {}
                 
     def add_score(self, player_name, time_score):
@@ -122,7 +122,7 @@ class Data:
                         bg_image = pygame.image.load(bg_path)
                         self.assets['backgrounds'][f'level{level_num}'] = scaled_bg
                     except Exception as e:
-                        print(f"Erro ao carregar background {bg_file}: {e}")
+                        print(f"Error loading {bg_file}: {e}")
                         # Fallback: criar background colorido
                         if level_num in [1, 2]:
                             self.assets['backgrounds'][f'level{level_num}'] = None
@@ -131,7 +131,7 @@ class Data:
                         else:
                             self.assets['backgrounds'][f'level{level_num}'] = None
                 else:
-                    print(f"Arquivo de background não encontrado: {bg_file}")
+                    print(f"Bacground file not found: {bg_file}")
                     self.assets['backgrounds'][f'level{level_num}'] = None
             
             enemy_ss = os.path.join(path_assets, 'enemies.png')
@@ -156,11 +156,11 @@ class Data:
                                             scale=(2*self.ratio.x, 2*self.ratio.y), 
                                             duration=1.0, loop=True)
             else:
-                print("Aviso: Arquivo da flag não encontrado")
+                print("Warn: Flag(png) not found!")
                 self.assets['flag'] = None
                 
         except Exception as e:
-            print(f"Erro ao carregar assets: {e}")
+            print(f"Error loading assets: {e}")
         
     def load_player_animations(self):
         try:
@@ -178,7 +178,7 @@ class Data:
                                     scale=(2*self.ratio.x, 2*self.ratio.y), duration=0.65, loop=True),
             }
         except Exception as e:
-            print(f"Erro ao carregar animações do player: {e}")
+            print(f"Error loading player animations: {e}")
 
 data = Data()
 
@@ -220,7 +220,7 @@ class ParallaxBackground:
                 if (bg_x + self.bg_width > 0 and bg_x < self.camera.viewport_width and
                     bg_y + self.bg_height > 0 and bg_y < self.camera.viewport_height):
                     
-                    renderer.blit(self.background, (bg_x, bg_y))
+                    renderer.blit(self.background, (bg_x, bg_y), use_cache=True)
 
 class Projectile:
     def __init__(self, x, y, direction):
@@ -255,19 +255,19 @@ class GameOverScene(Scene):
     
     def setup_ui(self):
         self.add_ui_element(TextLabel(self.engine.width//2, 100*data.ratio.y, 
-                                    'Missão Falhou!', 72, (200, 100, 100), 
-                                    path_font_ninja, root_point=(0.5, 0)))
+                                    'Mission Failed!', 72, (200, 100, 100), 
+                                    path_font_ninja, pivot=(0.5, 0)))
         
         time_str = f"{int(data.total_time//60)}:{int(data.total_time%60):02d}"
         self.time_label = TextLabel(self.engine.width//2, 200*data.ratio.y, 
-                                  f'Tempo: {time_str}', 48, (200, 170, 100), 
-                                  path_font_ninja, root_point=(0.5, 0))
+                                  f'Time: {time_str}', 48, (200, 170, 100), 
+                                  path_font_ninja, pivot=(0.5, 0))
         self.add_ui_element(self.time_label)
         
         self.menu_button = Button(self.engine.width//2, 350*data.ratio.y, 
                                 250*data.ratio.x, 65*data.ratio.y, 
-                                'Voltar ao Menu', 48, path_font_ninja, 
-                                root_point=(0.5, 0))
+                                'Return to Menu', 48, path_font_ninja, 
+                                pivot=(0.5, 0))
         self.menu_button.set_on_click(self.back_to_menu)
         self.add_ui_element(self.menu_button)
         
@@ -301,30 +301,30 @@ class VictoryScene(Scene):
     
     def setup_ui(self):
         self.add_ui_element(TextLabel(self.engine.width//2, 100*data.ratio.y, 
-                                    'Missão Concluída!', 72, (100, 200, 100), 
-                                    path_font_ninja, root_point=(0.5, 0)))
+                                    'Mission Completed!', 72, (100, 200, 100), 
+                                    path_font_ninja, pivot=(0.5, 0)))
         
         time_str = f"{int(data.total_time//60)}:{int(data.total_time%60):02d}"
         self.time_label = TextLabel(self.engine.width//2, 200*data.ratio.y, 
-                                  f'Tempo Total: {time_str}', 48, (200, 170, 100), 
-                                  path_font_ninja, root_point=(0.5, 0))
+                                  f'Time: {time_str}', 48, (200, 170, 100), 
+                                  path_font_ninja, pivot=(0.5, 0))
         self.add_ui_element(self.time_label)
         
         player_position = data.get_score_index(data.player_name)
         if player_position >= 0:
-            position_text = f'Posição no Ranking: #{player_position + 1}'
+            position_text = f'Ranking Position: #{player_position + 1}'
         else:
-            position_text = 'Fora do Ranking'
+            position_text = 'Ranking Position: N/A'
             
         self.position_label = TextLabel(self.engine.width//2, 260*data.ratio.y, 
                                       position_text, 36, (200, 170, 100), 
-                                      path_font_ninja, root_point=(0.5, 0))
+                                      path_font_ninja, pivot=(0.5, 0))
         self.add_ui_element(self.position_label)
         
         self.menu_button = Button(self.engine.width//2, 350*data.ratio.y, 
                                 250*data.ratio.x, 65*data.ratio.y, 
-                                'Voltar ao Menu', 48, path_font_ninja, 
-                                root_point=(0.5, 0))
+                                'Return to Menu', 48, path_font_ninja, 
+                                pivot=(0.5, 0))
         self.menu_button.set_on_click(self.back_to_menu)
         self.add_ui_element(self.menu_button)
         
@@ -354,32 +354,32 @@ class MainMenu(Scene):
     def setup_ui(self):
         self.add_ui_element(TextLabel(self.engine.width//2, 30*data.ratio.y, 
                                     'Scarf of Night', 108, (200, 50, 50), 
-                                    path_font_ninja, root_point=(0.5, 0)))
+                                    path_font_ninja, pivot=(0.5, 0)))
         
         self.play_button = Button(self.engine.width//2, 150*data.ratio.y, 
                                 360*data.ratio.x, 58*data.ratio.y, 
-                                'Iniciar Missão', 52, path_font_ninja, 
-                                root_point=(0.5, 0))
+                                'Start Mission', 52, path_font_ninja, 
+                                pivot=(0.5, 0))
         self.play_button.set_on_click(self.play)
         self.add_ui_element(self.play_button)
         
         self.exit_button = Button(self.engine.width//2, 220*data.ratio.y, 
                                 160*data.ratio.x, 52*data.ratio.y, 
-                                'Sair', 50, path_font_ninja, root_point=(0.5, 0))
+                                'Quit', 50, path_font_ninja, pivot=(0.5, 0))
         self.exit_button.set_on_click(self.quit)
         self.add_ui_element(self.exit_button)
         
         self.add_ui_element(TextLabel(self.engine.width//2, 275*data.ratio.y, 
-                                    'Nome e Turma:', 26, (200, 170, 100), 
-                                    path_font_ninja, root_point=(0.5, 0)))
+                                    'Name:', 26, (200, 170, 100), 
+                                    path_font_ninja, pivot=(0.5, 0)))
         self.name_textbox = TextBox(self.engine.width//2, 315*data.ratio.y, 
                                   200*data.ratio.x, 30*data.ratio.y, 
-                                  '', 24, path_font_ninja, root_point=(0.5, 0))
+                                  '', 24, path_font_ninja, pivot=(0.5, 0))
         self.add_ui_element(self.name_textbox)
         
         self.leaderboard_label = TextLabel(self.engine.width//2, 370*data.ratio.y, 
                                          'Leaderboard', 42, (200, 170, 100), 
-                                         path_font_ninja, root_point=(0.5, 0))
+                                         path_font_ninja, pivot=(0.5, 0))
         self.add_ui_element(self.leaderboard_label)
         
         self.leaderboard_frame = ScrollingFrame(self.engine.width//2, 
@@ -387,7 +387,7 @@ class MainMenu(Scene):
                                               int(400*data.ratio.x), 
                                               int(200*data.ratio.y), 
                                               380*data.ratio.x, 400*data.ratio.y, 
-                                              root_point=(0.5, 0))
+                                              pivot=(0.5, 0))
         self.add_ui_element(self.leaderboard_frame)
         
     def update_leaderboard(self):
@@ -395,8 +395,8 @@ class MainMenu(Scene):
         
         if not data.leaderboard["scores"]:
             no_scores = TextLabel(190*data.ratio.x, 20*data.ratio.y, 
-                                'Nenhuma pontuação ainda!', 24, (150, 150, 150), 
-                                path_font_ninja, root_point=(0.5, 0))
+                                'No Scores!', 24, (150, 150, 150), 
+                                path_font_ninja, pivot=(0.5, 0))
             self.leaderboard_frame.add_child(no_scores)
             return
             
@@ -406,7 +406,7 @@ class MainMenu(Scene):
             rank_text = f"#{i+1} {score_data['name']} - {time_str}"
             score_label = TextLabel(10*data.ratio.x, y_pos*data.ratio.y, 
                                   rank_text, 20, (200, 170, 100), 
-                                  path_font_ninja, root_point=(0, 0))
+                                  path_font_ninja, pivot=(0, 0))
             self.leaderboard_frame.add_child(score_label)
         
     def update(self, dt):
@@ -707,7 +707,7 @@ class Player:
         
         new_rect = pygame.Rect(0,0, self.rect.width, self.rect.height)
         new_rect.center = screen_pos.x, screen_pos.y + (self.hitbox.height - self.rect.height)/2
-        renderer.blit(frame, new_rect)
+        renderer.blit(frame, new_rect, use_cache=False)
         
         if DEBUG_MODE:
             # Debug visuals
@@ -728,7 +728,7 @@ class Player:
             font = pygame.font.Font(None, 24)
             stamina_text = f"Stamina: {int(self.stamina)}"
             stamina_surface = font.render(stamina_text, True, (0, 255, 0))
-            renderer.blit(stamina_surface, (10, 100))
+            renderer.blit(stamina_surface, (10, 100), use_cache=False)
 
 class Enemy:
     def __init__(self, x, y, enemy_type):
@@ -897,7 +897,7 @@ class Enemy:
         screen_pos = camera.world_to_screen((self.rect.x, self.rect.y))
         new_rect = pygame.Rect(screen_pos.x-5*data.ratio.x, screen_pos.y-3*data.ratio.y, 
                              self.rect.width+10*data.ratio.x, self.rect.height+6*data.ratio.y)
-        renderer.blit(frame, new_rect)
+        renderer.blit(frame, new_rect, use_cache=False)
         
         if DEBUG_MODE:
             screen_rect = self.rect.copy()
@@ -907,32 +907,24 @@ class Enemy:
 class GameScene(Scene):
     def __init__(self, engine):
         super().__init__(engine)
-        self.audio_system: AudioSystem = AudioSystem(16)
         self.background_music = None
         self.parallax_bg = None
         
         try:
-            # Carregar efeitos sonoros
-            self.audio_system.load_sound_effect('jump', os.path.join('assets', 'jump.wav'))
-            self.audio_system.load_sound_effect('attack', os.path.join('assets', 'attack.wav'))
-            self.audio_system.load_sound_effect('death', os.path.join('assets', 'death.wav'))
-            self.audio_system.load_sound_effect('dash', os.path.join('assets', 'dash.wav'))
+            self.audio_manager.load_sound('jump', os.path.join('assets', 'jump.wav'), 'sfx')
+            self.audio_manager.load_sound('attack', os.path.join('assets', 'attack.wav'), 'sfx')
+            self.audio_manager.load_sound('death', os.path.join('assets', 'death.wav'), 'sfx')
+            self.audio_manager.load_sound('dash', os.path.join('assets', 'dash.wav'), 'sfx')
             
-            # Carregar música de fundo
             music_path = os.path.join('assets', 'music.mp3')
             if os.path.exists(music_path):
-                try:
-                    pygame.mixer.music.load(music_path)
-                    pygame.mixer.music.set_volume(0.5)
-                    pygame.mixer.music.play(-1)  # -1 para loop infinito
-                    print("Música de fundo carregada e tocando")
-                except Exception as e:
-                    print(f"Erro ao carregar música: {e}")
+                self.audio_manager.load_sound('music', music_path, 'music')
+                self.audio_manager.play_music('music', 0.8)
             else:
-                print("Arquivo de música não encontrado")
+                print("Music file not found!")
                 
         except Exception as e:
-            print(f"Erro ao carregar sons: {e}")
+            print(f"Error loading audio: {e}")
     
     def on_enter(self, previous_scene=None):
         self.start_time = time.time()
@@ -956,10 +948,10 @@ class GameScene(Scene):
         if bg_key in data.assets['backgrounds'] and data.assets['backgrounds'][bg_key] is not None:
             background_surface = data.assets['backgrounds'][bg_key]
             self.parallax_bg = ParallaxBackground(background_surface, self.camera, speed_factor=0.3)
-            print(f"Background parallax configurado para {bg_key}")
+            print(f"Parallax background set to {bg_key}")
         else:
             self.parallax_bg = None
-            print(f"Usando fallback background para {bg_key}")
+            print(f"Using fallback to {bg_key}")
     
     def setup_camera(self):
         self.camera.set_target(self.player, CameraMode.PLATFORMER)
@@ -968,18 +960,18 @@ class GameScene(Scene):
         self.clear_ui_elements()
         
         self.health_display = TextLabel((15*data.ratio.x), (15*data.ratio.y), 
-                                      'Vidas: 3', 30, (200, 50, 50), 
-                                      path_font_ninja, root_point=(0, 0))
+                                      'Lifes: 3', 30, (200, 50, 50), 
+                                      path_font_ninja, pivot=(0, 0))
         self.add_ui_element(self.health_display)
         
         self.time_display = TextLabel(self.engine.width//2, (15*data.ratio.y), 
-                                    'Tempo: 0:00', 30, (200, 200, 200), 
-                                    path_font_ninja, root_point=(0.5, 0))
+                                    'Time: 0:00', 30, (200, 200, 200), 
+                                    path_font_ninja, pivot=(0.5, 0))
         self.add_ui_element(self.time_display)
         
         self.level_display = TextLabel(self.engine.width-(15*data.ratio.x), (15*data.ratio.y), 
-                                     f'Fase {data.current_level}/5', 30, (200, 200, 200), 
-                                     path_font_ninja, root_point=(1, 0))
+                                     f'Phase {data.current_level}/5', 30, (200, 200, 200), 
+                                     path_font_ninja, pivot=(1, 0))
         self.add_ui_element(self.level_display)
     
     def determine_tile_type(self, tile_map, x, y, tile_type):
@@ -1087,7 +1079,7 @@ class GameScene(Scene):
                 break
         
         if not level_data:
-            print(f"Mapa do nível {level_num} não encontrado!")
+            print(f"Map of level {level_num} not found!")
             return
         
         tile_size = int(64 * data.ratio.x)
@@ -1118,7 +1110,7 @@ class GameScene(Scene):
                     self.player.current_state = 'idle'
                     
                     player_spawned = True
-                    print(f"Player spawnado em: ({spawn_x}, {spawn_y})")
+                    print(f"Player spawned at: ({spawn_x}, {spawn_y})")
                     
                 elif char == 'G':
                     enemy = Enemy(x * tile_size, (y - 1) * tile_size, 'guard')
@@ -1142,7 +1134,7 @@ class GameScene(Scene):
                         break
         
         if not player_spawned:
-            print("AVISO: Nenhum ponto de spawn 'P' encontrado no mapa! Usando posição padrão.")
+            print("Warn: Player not spawned!")
             self.player.position = pygame.Vector2(100, 400)
         
         # Reconfigurar o background parallax para o novo nível
@@ -1152,7 +1144,7 @@ class GameScene(Scene):
         if data.maps and 'levels' in data.maps:
             self.load_level_from_map(level_num)
         else:
-            print("Nenhum mapa carregado!")
+            print("No Map loaded")
     
     def render(self, renderer:Renderer):
         # Renderizar background parallax
@@ -1174,7 +1166,7 @@ class GameScene(Scene):
                 tile_sprite, tile_pos, tile_key, is_solid = tile_data
                 if tile_sprite and is_solid:
                     screen_pos = self.camera.world_to_screen(pygame.Vector2(tile_pos[0], tile_pos[1]))
-                    renderer.blit(tile_sprite, screen_pos)
+                    renderer.blit(tile_sprite, screen_pos, use_cache=True)
         
         # Renderizar inimigos, projéteis, bandeira e player
         for enemy in self.enemies:
@@ -1188,7 +1180,7 @@ class GameScene(Scene):
                 flag_frame = data.assets['flag'].get_current_frame()
                 goal_pos = self.camera.world_to_screen(pygame.Vector2(self.goal.x, self.goal.y))
                 flag_rect = pygame.Rect(goal_pos.x, goal_pos.y, self.goal.width, self.goal.height)
-                renderer.blit(flag_frame, flag_rect)
+                renderer.blit(flag_frame, flag_rect, use_cache=False)
             else:
                 goal_pos = self.camera.world_to_screen(pygame.Vector2(self.goal.x, self.goal.y))
                 renderer.draw_rect(goal_pos.x, goal_pos.y, self.goal.width, self.goal.height, (50, 200, 50))
@@ -1225,7 +1217,7 @@ class GameScene(Scene):
                         if enemy.health <= 0:
                             self.enemies.remove(enemy)
                         try:
-                            self.audio_system.play_sound_effect('attack')
+                            self.audio_manager.play('attack')
                         except:
                             pass
         
@@ -1243,8 +1235,6 @@ class GameScene(Scene):
         if 'flag' in data.assets and data.assets['flag'] and self.goal:
             data.assets['flag'].update()
         
-        self.camera.update(dt)
-        self.particle_system.update(dt, self.camera.position)
         
         if self.player.health <= 0:
             self.engine.set_scene("game_over")
@@ -1258,7 +1248,7 @@ class GameScene(Scene):
                 self.engine.set_scene("victory")
             else:
                 self.load_level(data.current_level)
-                self.level_display.set_text(f'Fase {data.current_level}/5')
+                self.level_display.set_text(f'Phase {data.current_level}/5')
                 self.player.health = 3
                 self.player.stamina = 100
 
