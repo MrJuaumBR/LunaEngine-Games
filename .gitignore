@@ -2,6 +2,11 @@
 /launcher/cache
 /launcher/config
 /launcher/games
+output/
+temp/
+get-pip.py
+test.html
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -5,7 +5,7 @@
             "name": "Python: Launcher",
             "type": "debugpy",
             "request": "launch",
-            "program": "launcher.py",
+            "program": "main.py",
             "cwd": "${workspaceFolder}/launcher",
             "console": "integratedTerminal",
             "justMyCode": true

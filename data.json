@@ -3,7 +3,7 @@
     "version": 0,
     "author": "MrJuaumBR",
     "total_games": 15,
-    "last_update": "2026-09-08 16:47:12"
+    "last_update": "2026-11-08 22:34:02"
   },
   "games": [
     {
@@ -44,13 +44,22 @@
       },
       "save_type": "file",
       "save_data_path": "2048_leaderboard.json",
+      "system_requirements": {
+        "storage": "0.04 MB",
+        "os": [
+          "W"
+        ]
+      },
+      "source": "games/2048",
+      "build": "games-build/2048-0.0.1.zip",
       "total_files": 3,
       "total_size_mb": 0.04,
       "requirements": [
         "lunaengine"
       ],
       "compact_file": "2048-0.0.1.zip",
-      "external_game": false
+      "external_game": false,
+      "screenshots": []
     },
     {
       "title": "Breakout",
@@ -79,13 +88,22 @@
       },
       "save_type": "file",
       "save_data_path": "leaderboard.json",
+      "system_requirements": {
+        "storage": "1.95 MB",
+        "os": [
+          "W"
+        ]
+      },
+      "source": "games/Breakout",
+      "build": "games-build/Breakout-0.0.1.zip",
       "total_files": 4,
       "total_size_mb": 1.95,
       "requirements": [
         "lunaengine"
       ],
       "compact_file": "Breakout-0.0.1.zip",
-      "external_game": false
+      "external_game": false,
+      "screenshots": []
     },
     {
       "title": "DyeSorter",
@@ -109,13 +127,22 @@
       },
       "save_type": "file",
       "save_data_path": "leaderboard.json",
+      "system_requirements": {
+        "storage": "0.02 MB",
+        "os": [
+          "W"
+        ]
+      },
+      "source": "games/DyeSorter",
+      "build": "games-build/DyeSorter-0.0.1.zip",
       "total_files": 4,
-      "total_size_mb": 0.0,
+      "total_size_mb": 0.02,
       "requirements": [
-        "lunaengine"
+        "lunaengine>=0.2.6.3"
       ],
       "compact_file": "DyeSorter-0.0.1.zip",
-      "external_game": false
+      "external_game": false,
+      "screenshots": []
     },
     {
       "title": "Farming",
@@ -139,13 +166,22 @@
       },
       "save_type": "file",
       "save_data_path": "leaderboard.json",
+      "system_requirements": {
+        "storage": "0.95 MB",
+        "os": [
+          "W"
+        ]
+      },
+      "source": "games/Farming",
+      "build": "games-build/Farming-0.0.2.zip",
       "total_files": 12,
       "total_size_mb": 0.95,
       "requirements": [
         "lunaengine"
       ],
       "compact_file": "Farming-0.0.2.zip",
-      "external_game": false
+      "external_game": false,
+      "screenshots": []
     },
     {
       "title": "Flapyn",
@@ -172,13 +208,22 @@
       },
       "save_type": "file",
       "save_data_path": "leaderboard.json",
+      "system_requirements": {
+        "storage": "2.06 MB",
+        "os": [
+          "W"
+        ]
+      },
+      "source": "games/Flapyn",
+      "build": "games-build/Flapyn-0.0.1.zip",
       "total_files": 9,
       "total_size_mb": 2.06,
       "requirements": [
         "lunaengine"
       ],
       "compact_file": "Flapyn-0.0.1.zip",
-      "external_game": false
+      "external_game": false,
+      "screenshots": []
     },
     {
       "title": "MemoryCard",
@@ -204,13 +249,22 @@
       },
       "save_type": "file",
       "save_data_path": "memory_leaderboard.json",
+      "system_requirements": {
+        "storage": "0.08 MB",
+        "os": [
+          "W"
+        ]
+      },
+      "source": "games/MemoryCard",
+      "build": "games-build/MemoryCard-0.0.1.zip",
       "total_files": 5,
       "total_size_mb": 0.08,
       "requirements": [
         "lunaengine"
       ],
       "compact_file": "MemoryCard-0.0.1.zip",
-      "external_game": false
+      "external_game": false,
+      "screenshots": []
     },
     {
       "title": "Naves",
@@ -235,6 +289,14 @@
       },
       "save_type": null,
       "save_data_path": "",
+      "system_requirements": {
+        "storage": "3.04 MB",
+        "os": [
+          "W"
+        ]
+      },
+      "source": "games/Naves",
+      "build": "games-build/Naves-0.0.2.zip",
       "total_files": 12,
       "total_size_mb": 3.04,
       "requirements": [
@@ -242,7 +304,8 @@
         "LunaEngine>=0.1.4.2"
       ],
       "compact_file": "Naves-0.0.2.zip",
-      "external_game": false
+      "external_game": false,
+      "screenshots": []
     },
     {
       "title": "Phases",
@@ -268,13 +331,22 @@
       },
       "save_type": "file",
       "save_data_path": "leaderboard.json",
+      "system_requirements": {
+        "storage": "1.97 MB",
+        "os": [
+          "W"
+        ]
+      },
+      "source": "games/Phases",
+      "build": "games-build/Phases-0.0.1.zip",
       "total_files": 13,
       "total_size_mb": 1.97,
       "requirements": [
         "lunaengine"
       ],
       "compact_file": "Phases-0.0.1.zip",
-      "external_game": false
+      "external_game": false,
+      "screenshots": []
     },
     {
       "title": "Pong",
@@ -298,13 +370,22 @@
       },
       "save_type": null,
       "save_data_path": "",
+      "system_requirements": {
+        "storage": "0.03 MB",
+        "os": [
+          "W"
+        ]
+      },
+      "source": "games/Pong",
+      "build": "games-build/Pong-0.0.2.zip",
       "total_files": 3,
       "total_size_mb": 0.03,
       "requirements": [
         "lunaengine"
       ],
       "compact_file": "Pong-0.0.2.zip",
-      "external_game": false
+      "external_game": false,
+      "screenshots": []
     },
     {
       "title": "PuzzleSlider",
@@ -328,13 +409,22 @@
       },
       "save_type": null,
       "save_data_path": "",
+      "system_requirements": {
+        "storage": "0.03 MB",
+        "os": [
+          "W"
+        ]
+      },
+      "source": "games/PuzzleSlider",
+      "build": "games-build/PuzzleSlider-0.0.1.zip",
       "total_files": 3,
       "total_size_mb": 0.03,
       "requirements": [
         "lunaengine"
       ],
       "compact_file": "PuzzleSlider-0.0.1.zip",
-      "external_game": false
+      "external_game": false,
+      "screenshots": []
     },
     {
       "title": "Scarf of Night",
@@ -359,13 +449,22 @@
       },
       "save_type": null,
       "save_data_path": "",
+      "system_requirements": {
+        "storage": "0.76 MB",
+        "os": [
+          "W"
+        ]
+      },
+      "source": "games/Scarf of Night",
+      "build": "games-build/Scarf of Night-0.0.2.zip",
       "total_files": 14,
       "total_size_mb": 0.76,
       "requirements": [
         "lunaengine>=0.1.5"
       ],
       "compact_file": "Scarf of Night-0.0.2.zip",
-      "external_game": false
+      "external_game": false,
+      "screenshots": []
     },
     {
       "title": "Snake",
@@ -391,13 +490,22 @@
       },
       "save_type": null,
       "save_data_path": "",
+      "system_requirements": {
+        "storage": "0.03 MB",
+        "os": [
+          "W"
+        ]
+      },
+      "source": "games/Snake",
+      "build": "games-build/Snake-0.0.2.zip",
       "total_files": 3,
       "total_size_mb": 0.03,
       "requirements": [
         "lunaengine"
       ],
       "compact_file": "Snake-0.0.2.zip",
-      "external_game": false
+      "external_game": false,
+      "screenshots": []
     },
     {
       "title": "TankSiege",
@@ -437,13 +545,22 @@
       },
       "save_type": "file",
       "save_data_path": "leaderboard.json",
+      "system_requirements": {
+        "storage": "0.07 MB",
+        "os": [
+          "W"
+        ]
+      },
+      "source": "games/TankSiege",
+      "build": "games-build/TankSiege-0.0.1.zip",
       "total_files": 4,
       "total_size_mb": 0.07,
       "requirements": [
         "lunaengine"
       ],
       "compact_file": "TankSiege-0.0.1.zip",
-      "external_game": false
+      "external_game": false,
+      "screenshots": []
     },
     {
       "title": "TicTacToe",
@@ -466,13 +583,22 @@
       },
       "save_type": "file",
       "save_data_path": "leaderboard.json",
+      "system_requirements": {
+        "storage": "0.02 MB",
+        "os": [
+          "W"
+        ]
+      },
+      "source": "games/TicTacToe",
+      "build": "games-build/TicTacToe-0.0.1.zip",
       "total_files": 3,
       "total_size_mb": 0.02,
       "requirements": [
         "lunaengine"
       ],
       "compact_file": "TicTacToe-0.0.1.zip",
-      "external_game": false
+      "external_game": false,
+      "screenshots": []
     },
     {
       "title": "DungeonGenerator",
@@ -498,6 +624,14 @@
       },
       "save_type": "file",
       "save_data_path": "saves.json",
+      "system_requirements": {
+        "storage": "0.19 MB",
+        "os": [
+          "W"
+        ]
+      },
+      "source": "https://github.com/MrJuaumBR/DungeonGenerator",
+      "build": "games-build/DungeonGenerator-0.0.1.zip",
       "total_files": 7,
       "total_size_mb": 0.19,
       "requirements": [
@@ -506,7 +640,8 @@
       ],
       "compact_file": "DungeonGenerator-0.0.1.zip",
       "external_game": true,
-      "repo_url": "https://github.com/MrJuaumBR/DungeonGenerator"
+      "repo_url": "https://github.com/MrJuaumBR/DungeonGenerator",
+      "screenshots": []
     }
   ]
 }
